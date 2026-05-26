@@ -1,0 +1,2232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intel Tech Events Dashboard</title>
+<style>
+  :root {
+    --intel-blue: #0068b5;
+    --intel-dark: #003c71;
+    --intel-light-blue: #00aeef;
+    --intel-white: #ffffff;
+    --intel-gray: #f4f4f4;
+    --intel-dark-gray: #333333;
+    --intel-accent: #1a8fff;
+    --card-bg: #ffffff;
+    --shadow: 0 2px 12px rgba(0,104,181,0.10);
+    --alert-upcoming: #e8f4fd;
+    --alert-nearing: #fff3cd;
+    --alert-urgent: #fde8e8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg, #003c71 0%, #0068b5 60%, #00aeef 100%);
+    min-height: 100vh;
+    color: var(--intel-dark-gray);
+  }
+  /* HEADER */
+  .header {
+    background: rgba(0,28,60,0.92);
+    padding: 18px 32px 14px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 3px solid var(--intel-light-blue);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(6px);
+  }
+  .header-left { display: flex; align-items: center; gap: 18px; }
+  .header-meta { font-size: 11.5px; color: #a0c4e8; margin-top: 5px; letter-spacing: 0.3px; }
+  .header-meta span { font-weight: 600; color: #cde5ff; }
+  .intel-logo {
+    width: 64px; height: 64px;
+    background: var(--intel-white);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 22px; color: var(--intel-blue);
+    letter-spacing: -1px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  }
+  .header-title { color: var(--intel-white); }
+  .header-title h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: 0.5px; }
+  .header-title p { font-size: 0.82rem; color: #90caf9; margin-top: 2px; }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .live-badge {
+    display: flex; align-items: center; gap: 7px;
+    background: rgba(0,174,239,0.18);
+    border: 1px solid var(--intel-light-blue);
+    border-radius: 20px; padding: 5px 14px;
+    color: #90caf9; font-size: 0.82rem; font-weight: 600;
+  }
+  .live-dot {
+    width: 9px; height: 9px; background: #4caf50;
+    border-radius: 50%; animation: blink 1.2s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+  .last-updated { color: #90caf9; font-size: 0.78rem; }
+  .refresh-btn {
+    background: var(--intel-blue); color: white; border: none;
+    border-radius: 8px; padding: 8px 16px; cursor: pointer;
+    font-size: 0.82rem; font-weight: 600; transition: background 0.2s;
+  }
+  .refresh-btn:hover { background: var(--intel-light-blue); }
+
+  /* ALERTS */
+  .alerts-bar {
+    background: rgba(0,20,50,0.82);
+    padding: 10px 32px;
+    display: flex; gap: 12px; flex-wrap: wrap;
+    border-bottom: 1px solid rgba(0,174,239,0.2);
+  }
+  .alert-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 14px; border-radius: 20px;
+    font-size: 0.8rem; font-weight: 600; cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .alert-item:hover { transform: scale(1.04); }
+  .alert-urgent   { background: #c62828; color: #fff; }
+  .alert-nearing  { background: #f57f17; color: #fff; }
+  .alert-upcoming { background: #1565c0; color: #fff; }
+  .alert-icon { font-size: 1rem; }
+
+  /* MAIN LAYOUT */
+  .main { padding: 24px 28px; }
+
+  /* FILTERS */
+  .filter-bar {
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 12px; padding: 14px 20px;
+    display: flex; flex-wrap: wrap; gap: 12px;
+    align-items: center; margin-bottom: 22px;
+    backdrop-filter: blur(4px);
+  }
+  .filter-label { color: #cde; font-size: 0.82rem; font-weight: 600; }
+  .filter-btn {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25);
+    color: #e8f4fd; border-radius: 20px; padding: 5px 14px;
+    cursor: pointer; font-size: 0.8rem; font-weight: 500; transition: all 0.2s;
+  }
+  .filter-btn:hover, .filter-btn.active {
+    background: var(--intel-blue); border-color: var(--intel-light-blue); color: white;
+  }
+  .search-box {
+    margin-left: auto; background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3); border-radius: 8px;
+    padding: 6px 14px; color: white; font-size: 0.85rem; width: 220px;
+    outline: none;
+  }
+  .search-box::placeholder { color: rgba(255,255,255,0.5); }
+  .search-box:focus { border-color: var(--intel-light-blue); background: rgba(255,255,255,0.2); }
+
+  /* STAT CARDS */
+  .stats-row {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px; margin-bottom: 24px;
+  }
+  .stat-card {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 12px; padding: 16px 18px; text-align: center;
+    color: white; backdrop-filter: blur(4px); transition: transform 0.2s;
+  }
+  .stat-card:hover { transform: translateY(-2px); }
+  .stat-num { font-size: 2.2rem; font-weight: 800; color: var(--intel-light-blue); }
+  .stat-label { font-size: 0.78rem; color: #b0d4f0; margin-top: 2px; }
+
+  /* SECTION HEADERS */
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 28px 0 14px 0;
+  }
+  .section-title {
+    color: white; font-size: 1.12rem; font-weight: 700;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-title .badge {
+    background: var(--intel-blue); color: white;
+    border-radius: 20px; padding: 2px 10px; font-size: 0.75rem;
+  }
+  .view-all {
+    color: var(--intel-light-blue); font-size: 0.8rem;
+    cursor: pointer; text-decoration: underline;
+  }
+
+  /* EVENT CARDS GRID */
+  .events-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+    gap: 18px;
+  }
+  .event-card {
+    background: var(--card-bg); border-radius: 14px;
+    box-shadow: var(--shadow); padding: 18px 20px;
+    border-left: 5px solid var(--intel-blue);
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative; overflow: hidden;
+  }
+  .event-card:hover { transform: translateY(-3px); box-shadow: 0 6px 24px rgba(0,104,181,0.18); }
+  .event-card.urgent { border-left-color: #c62828; }
+  .event-card.nearing { border-left-color: #f57f17; }
+  .event-card.conf { border-left-color: #0068b5; }
+  .event-card.paper { border-left-color: #6a1b9a; }
+  .event-card.learning { border-left-color: #00838f; }
+  .event-card.talk { border-left-color: #2e7d32; }
+  .event-card.outside { border-left-color: #ad1457; }
+
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .card-badges { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+  .tag {
+    border-radius: 12px; padding: 2px 10px; font-size: 0.72rem;
+    font-weight: 600; display: inline-block;
+  }
+  .tag-type-conf     { background: #e3f2fd; color: #1565c0; }
+  .tag-type-paper    { background: #f3e5f5; color: #6a1b9a; }
+  .tag-type-learning { background: #e0f7fa; color: #00838f; }
+  .tag-type-talk     { background: #e8f5e9; color: #2e7d32; }
+  .tag-area-virt  { background: #e8eaf6; color: #283593; }
+  .tag-area-gfx   { background: #fce4ec; color: #880e4f; }
+  .tag-area-ai    { background: #fff8e1; color: #f57f00; }
+  .tag-area-genai { background: #f3e5f5; color: #6a1b9a; }
+  .tag-area-auto  { background: #e8f5e9; color: #1b5e20; }
+  .tag-area-val   { background: #e0f2f1; color: #004d40; }
+  .tag-area-disp  { background: #fbe9e7; color: #bf360c; }
+  .tag-geo-blr    { background: #e3f2fd; color: #0d47a1; }
+  .tag-geo-india  { background: #e8f5e9; color: #1b5e20; }
+  .tag-geo-global { background: #fce4ec; color: #880e4f; }
+
+  .card-title { font-size: 0.97rem; font-weight: 700; color: var(--intel-dark); margin-bottom: 5px; }
+  .card-org { font-size: 0.78rem; color: #666; margin-bottom: 8px; }
+  .card-meta {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    font-size: 0.78rem; color: #555; margin-bottom: 8px;
+  }
+  .card-meta span { display: flex; align-items: center; gap: 4px; }
+  .card-desc { font-size: 0.8rem; color: #444; line-height: 1.5; margin-bottom: 10px; }
+  .card-footer { display: flex; align-items: center; justify-content: space-between; }
+  .days-badge {
+    font-size: 0.75rem; font-weight: 700; border-radius: 8px;
+    padding: 3px 10px;
+  }
+  .days-urgent  { background: #fde8e8; color: #c62828; }
+  .days-nearing { background: #fff3cd; color: #856404; }
+  .days-normal  { background: #e3f2fd; color: #1565c0; }
+  .days-past    { background: #f4f4f4; color: #999; }
+  .card-link {
+    font-size: 0.78rem; color: var(--intel-blue);
+    text-decoration: none; font-weight: 600;
+  }
+  .card-link:hover { color: var(--intel-light-blue); }
+
+  /* TIMELINE */
+  .timeline { position: relative; padding-left: 28px; }
+  .timeline::before {
+    content: ''; position: absolute; left: 10px; top: 0; bottom: 0;
+    width: 2px; background: linear-gradient(to bottom, var(--intel-blue), var(--intel-light-blue));
+  }
+  .timeline-item { position: relative; margin-bottom: 18px; }
+  .timeline-dot {
+    position: absolute; left: -22px; top: 8px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--intel-blue); border: 2px solid white;
+    box-shadow: 0 0 0 2px var(--intel-blue);
+  }
+  .timeline-dot.urgent { background: #c62828; box-shadow: 0 0 0 2px #c62828; }
+  .timeline-dot.nearing { background: #f57f17; box-shadow: 0 0 0 2px #f57f17; }
+
+  /* TABLE */
+  .data-table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; }
+  .data-table th {
+    background: var(--intel-blue); color: white;
+    padding: 10px 14px; font-size: 0.82rem; text-align: left;
+  }
+  .data-table td { padding: 9px 14px; font-size: 0.8rem; border-bottom: 1px solid #eee; }
+  .data-table tr:hover td { background: #f0f7ff; }
+
+  /* FOOTER */
+  .footer {
+    text-align: center; color: rgba(255,255,255,0.45);
+    font-size: 0.75rem; padding: 20px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    margin-top: 32px;
+  }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5); z-index: 1000;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: white; border-radius: 16px; padding: 28px;
+    max-width: 520px; width: 90%; position: relative;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  }
+  .modal-close {
+    position: absolute; top: 14px; right: 18px;
+    font-size: 1.4rem; cursor: pointer; color: #666;
+    background: none; border: none;
+  }
+  .modal h2 { color: var(--intel-blue); font-size: 1.1rem; margin-bottom: 10px; }
+
+  /* SCROLL */
+  ::-webkit-scrollbar { width: 7px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(0,104,181,0.4); border-radius: 4px; }
+
+  /* EDIT MODE */
+  .edit-mode-bar {
+    display: none; background: linear-gradient(90deg,#c62828,#b71c1c);
+    color: white; padding: 8px 32px; font-size: 0.82rem; font-weight: 700;
+    display: none; align-items: center; gap: 12px;
+  }
+  .edit-mode-bar.show { display: flex; }
+  .edit-mode-badge { background: rgba(255,255,255,0.25); border-radius: 12px; padding: 2px 10px; }
+  .card-delete-btn {
+    display: none; position: absolute; top: 8px; right: 10px;
+    background: #c62828; color: white; border: none; border-radius: 6px;
+    padding: 2px 8px; font-size: 0.72rem; cursor: pointer; font-weight: 700;
+    z-index: 10;
+  }
+  .edit-active .card-delete-btn { display: block; }
+  .add-event-fab {
+    display: none; position: fixed; bottom: 28px; right: 28px;
+    background: var(--intel-blue); color: white; border: none;
+    border-radius: 50%; width: 54px; height: 54px; font-size: 1.6rem;
+    cursor: pointer; box-shadow: 0 4px 16px rgba(0,104,181,0.5);
+    z-index: 200; transition: transform 0.2s;
+  }
+  .add-event-fab:hover { transform: scale(1.1); }
+  .edit-active .add-event-fab { display: flex; align-items: center; justify-content: center; }
+  .action-btn {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25);
+    color: #e8f4fd; border-radius: 8px; padding: 7px 14px;
+    cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: all 0.2s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .action-btn:hover { background: var(--intel-blue); border-color: var(--intel-light-blue); color: white; }
+  .action-btn.locked { color: #ffcc80; border-color: #ffcc80; }
+  .action-btn.unlocked { color: #a5d6a7; border-color: #a5d6a7; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(60px);
+    background: #1a1a2e; color: white; padding: 12px 24px; border-radius: 30px;
+    font-size: 0.85rem; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    transition: transform 0.4s; z-index: 500; border-left: 4px solid var(--intel-light-blue);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ADD FORM MODAL */
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: #333; margin-bottom: 4px; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; border: 1px solid #ccc; border-radius: 8px;
+    padding: 8px 12px; font-size: 0.85rem; outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--intel-blue); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .btn-primary {
+    background: var(--intel-blue); color: white; border: none;
+    border-radius: 8px; padding: 10px 22px; font-size: 0.85rem;
+    font-weight: 700; cursor: pointer; width: 100%; margin-top: 6px;
+  }
+  .btn-primary:hover { background: var(--intel-dark); }
+
+  /* LIVE NEWS FEED */
+  .news-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 14px; margin-bottom: 10px;
+  }
+  .news-card {
+    background: rgba(255,255,255,0.97); border-radius: 12px;
+    padding: 14px 16px; box-shadow: var(--shadow);
+    border-left: 4px solid var(--intel-light-blue);
+    transition: transform 0.2s; text-decoration: none;
+    display: block; color: inherit;
+  }
+  .news-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,104,181,0.2); }
+  .news-card.cfp { border-left-color: #6a1b9a; }
+  .news-card.automation { border-left-color: #2e7d32; }
+  .news-card.display { border-left-color: #bf360c; }
+  .news-card.graphics { border-left-color: #880e4f; }
+  .news-card.virtualization { border-left-color: #283593; }
+  .news-title { font-size: 0.85rem; font-weight: 700; color: var(--intel-dark); line-height: 1.4; margin-bottom: 8px; }
+  .news-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .news-source { font-size: 0.72rem; color: var(--intel-blue); font-weight: 700; }
+  .news-date { font-size: 0.72rem; color: #777; }
+  .news-area-tag { font-size: 0.7rem; background: #e3f2fd; color: #1565c0; border-radius: 10px; padding: 1px 8px; font-weight: 600; }
+  .news-area-tag.cfp { background: #f3e5f5; color: #6a1b9a; }
+  .news-area-tag.automation { background: #e8f5e9; color: #2e7d32; }
+  .news-area-tag.display { background: #fbe9e7; color: #bf360c; }
+  .news-area-tag.graphics { background: #fce4ec; color: #880e4f; }
+  .news-area-tag.virtualization { background: #e8eaf6; color: #283593; }
+  .news-area-tag.genai { background: #f3e5f5; color: #6a1b9a; }
+  .feed-status { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: rgba(255,255,255,0.6); }
+  .feed-dot { width: 8px; height: 8px; border-radius: 50%; background: #4caf50; flex-shrink: 0; }
+  .feed-dot.loading { background: #ffcc02; animation: blink 0.8s infinite; }
+  .feed-dot.error { background: #f44336; }
+  .news-skeleton {
+    background: rgba(255,255,255,0.12); border-radius: 12px;
+    height: 90px; animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:0.35} 50%{opacity:0.7} }
+  .ticker-bar {
+    background: rgba(0,0,0,0.35); border-radius: 10px;
+    padding: 9px 18px; margin-bottom: 16px;
+    display: none; align-items: center; gap: 14px; overflow: hidden;
+  }
+  .ticker-bar.show { display: flex; }
+  .ticker-label { color: var(--intel-light-blue); font-size: 0.78rem; font-weight: 800; white-space: nowrap; }
+  .ticker-content { overflow: hidden; flex: 1; }
+  .ticker-scroll { display: flex; gap: 40px; animation: tickerMove 60s linear infinite; white-space: nowrap; color: rgba(255,255,255,0.8); font-size: 0.8rem; }
+  @keyframes tickerMove { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+  .news-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .news-tab { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); color: #cde; border-radius: 20px; padding: 4px 14px; cursor: pointer; font-size: 0.78rem; font-weight: 600; transition: all 0.2s; }
+  .news-tab:hover, .news-tab.active { background: var(--intel-blue); border-color: var(--intel-light-blue); color: white; }
+  .cache-notice { font-size: 0.72rem; color: rgba(255,255,255,0.4); margin-left: auto; }
+
+  /* TAB NAVIGATION */
+  .tab-nav {
+    display: flex; gap: 10px; margin-bottom: 22px; flex-wrap: wrap;
+  }
+  .tab-btn {
+    flex: 1; min-width: 220px; background: rgba(255,255,255,0.10);
+    border: 2px solid rgba(255,255,255,0.18); color: rgba(255,255,255,0.7);
+    border-radius: 12px; padding: 14px 20px; cursor: pointer;
+    font-size: 0.92rem; font-weight: 700; transition: all 0.25s;
+    display: flex; flex-direction: column; gap: 3px; text-align: left;
+  }
+  .tab-btn .tab-sub {
+    font-size: 0.72rem; font-weight: 400; opacity: 0.7;
+  }
+  .tab-btn:hover {
+    background: rgba(255,255,255,0.18); border-color: var(--intel-light-blue);
+    color: white;
+  }
+  .tab-btn.active {
+    background: var(--intel-blue); border-color: var(--intel-light-blue);
+    color: white; box-shadow: 0 4px 16px rgba(0,104,181,0.4);
+  }
+  /* EXPLORE AREA TAGS */
+  .tag-area-cloud  { background: #e3f2fd; color: #0d47a1; }
+  .tag-area-sec    { background: #fce4ec; color: #880e4f; }
+  .tag-area-robot  { background: #e8f5e9; color: #1b5e20; }
+  .tag-area-quantum{ background: #f3e5f5; color: #4a148c; }
+  .tag-area-xr     { background: #fff8e1; color: #f57f00; }
+  .tag-area-devops { background: #e0f2f1; color: #004d40; }
+  .tag-area-semi   { background: #e8eaf6; color: #283593; }
+  .tag-area-iot    { background: #fbe9e7; color: #bf360c; }
+  .tag-area-data   { background: #f1f8e9; color: #33691e; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="intel-logo">intel</div>
+    <div class="header-title">
+      <h1>Tech Events Intelligence Dashboard</h1>
+      <p>Virtualization &bull; Graphics &bull; AI &bull; GenAI &bull; AI Automation &bull; Validation Automation &bull; Display</p>
+      <div class="header-meta">
+        <span>Manager:</span> Chennagiri Sheshashai, Sowmya &nbsp;&nbsp;|&nbsp;&nbsp; <span>Team:</span> EPS COES GFX SRIOV Team
+      </div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="live-badge"><span class="live-dot"></span>LIVE</div>
+    <div class="last-updated" id="lastUpdated">Last refreshed: 26 May 2026</div>
+    <button class="refresh-btn" onclick="refreshDashboard()">Refresh</button>
+  </div>
+</div>
+
+<!-- EDIT MODE BAR -->
+<div class="edit-mode-bar" id="editModeBar">
+  <span class="edit-mode-badge">&#9998; EDIT MODE ON</span>
+  <span>You can add or delete events. Changes persist in this browser.</span>
+  <span style="margin-left:auto;cursor:pointer;opacity:0.7" onclick="toggleEditMode()">&#10006; Exit Edit Mode</span>
+</div>
+
+<!-- ALERTS BAR -->
+<div class="alerts-bar" id="alertsBar">
+  <!-- alerts injected by JS -->
+</div>
+
+<div class="main">
+  <!-- FILTERS -->
+  <div class="filter-bar">
+    <span class="filter-label">Location:</span>
+    <button class="filter-btn active" onclick="filterBy('geo','all',this)">All</button>
+    <button class="filter-btn" onclick="filterBy('geo','bangalore',this)">&#128205; Bangalore</button>
+    <button class="filter-btn" onclick="filterBy('geo','india',this)">&#127470;&#127475; India</button>
+    <button class="filter-btn" onclick="filterBy('geo','global',this)">&#127760; Global</button>
+    <span class="filter-label" style="margin-left:10px">Area:</span>
+    <button class="filter-btn" onclick="filterBy('area','all',this)">All</button>
+    <button class="filter-btn" onclick="filterBy('area','virtualization',this)">Virtualization</button>
+    <button class="filter-btn" onclick="filterBy('area','graphics',this)">Graphics</button>
+    <button class="filter-btn" onclick="filterBy('area','ai',this)">AI</button>
+    <button class="filter-btn" onclick="filterBy('area','genai',this)">GenAI</button>
+    <button class="filter-btn" onclick="filterBy('area','automation',this)">Automation</button>
+    <button class="filter-btn" onclick="filterBy('area','display',this)">Display</button>
+    <span class="filter-label" style="margin-left:10px">Type:</span>
+    <button class="filter-btn" onclick="filterBy('type','all',this)">All</button>
+    <button class="filter-btn" onclick="filterBy('type','conference',this)">Conference</button>
+    <button class="filter-btn" onclick="filterBy('type','paper',this)">Paper Submission</button>
+    <button class="filter-btn" onclick="filterBy('type','learning',this)">Learning</button>
+    <button class="filter-btn" onclick="filterBy('type','talk',this)">Talk/Webinar</button>
+    <input class="search-box" id="searchBox" type="text" placeholder="&#128269; Search events..." oninput="searchEvents()">
+  </div>
+
+
+  <!-- TAB NAVIGATION -->
+  <div class="tab-nav">
+    <button class="tab-btn active" id="tabCore" onclick="switchTab('core')">
+      &#9733; Core Tech Areas
+      <span class="tab-sub">Virtualization &bull; AI &bull; GenAI &bull; Graphics &bull; Display &bull; Automation</span>
+    </button>
+    <button class="tab-btn" id="tabExplore" onclick="switchTab('explore')">
+      &#9884; Explore More Areas
+      <span class="tab-sub">Cloud &bull; Security &bull; Robotics &bull; Quantum &bull; XR &bull; DevOps &bull; IoT &bull; Semiconductor</span>
+    </button>
+  </div>
+  <div id="coreContent">
+  <!-- STATS -->
+  <div class="stats-row" id="statsRow"></div>
+
+  <!-- LIVE NEWS SECTION -->
+  <div class="section-header" style="margin-top:10px">
+    <div class="section-title">&#128225; Live Tech Intelligence Feed <span class="badge" id="newsCount">Loading...</span></div>
+    <div class="feed-status"><span class="feed-dot loading" id="feedDot"></span><span id="feedStatus">Fetching latest news &amp; events...</span></div>
+  </div>
+  <!-- News area filter tabs -->
+  <div class="news-tabs" id="newsTabs">
+    <button class="news-tab active" onclick="filterNews('all',this)">All Areas</button>
+    <button class="news-tab" onclick="filterNews('AI',this)">AI</button>
+    <button class="news-tab" onclick="filterNews('GenAI',this)">GenAI</button>
+    <button class="news-tab" onclick="filterNews('Graphics',this)">Graphics</button>
+    <button class="news-tab" onclick="filterNews('Virtualization',this)">Virtualization</button>
+    <button class="news-tab" onclick="filterNews('Display',this)">Display</button>
+    <button class="news-tab" onclick="filterNews('Automation',this)">Automation</button>
+    <button class="news-tab" onclick="filterNews('CFP',this)">CFPs</button>
+    <span class="cache-notice" id="cacheNotice"></span>
+  </div>
+  <!-- Ticker -->
+  <div class="ticker-bar" id="tickerBar">
+    <span class="ticker-label">&#128308; LIVE</span>
+    <div class="ticker-content"><div class="ticker-scroll" id="tickerScroll"></div></div>
+  </div>
+  <!-- News grid -->
+  <div class="news-grid" id="newsGrid">
+    <div class="news-skeleton"></div><div class="news-skeleton"></div>
+    <div class="news-skeleton"></div><div class="news-skeleton"></div>
+    <div class="news-skeleton"></div><div class="news-skeleton"></div>
+  </div>
+
+  <!-- URGENT ALERTS SECTION -->
+  <div class="section-header">
+    <div class="section-title">&#128680; Urgent  -  Deadline in &lt;14 Days <span class="badge" id="urgentCount">0</span></div>
+  </div>
+  <div class="events-grid" id="urgentGrid"></div>
+
+  <!-- UPCOMING BANGALORE -->
+  <div class="section-header">
+    <div class="section-title">&#128205; Bangalore / Nearby Events <span class="badge" id="blrCount">0</span></div>
+  </div>
+  <div class="events-grid" id="blrGrid"></div>
+
+  <!-- UPCOMING INDIA -->
+  <div class="section-header">
+    <div class="section-title">&#127470;&#127475; Rest of India <span class="badge" id="indiaCount">0</span></div>
+  </div>
+  <div class="events-grid" id="indiaGrid"></div>
+
+  <!-- GLOBAL EVENTS -->
+  <div class="section-header">
+    <div class="section-title">&#127760; Global / Outside India <span class="badge" id="globalCount">0</span></div>
+  </div>
+  <div class="events-grid" id="globalGrid"></div>
+
+  <!-- PAPER SUBMISSIONS TABLE -->
+  <div class="section-header" style="margin-top:32px">
+    <div class="section-title">&#128196; Paper Submission Deadlines</div>
+  </div>
+  <div style="background:white;border-radius:14px;overflow:hidden;box-shadow:var(--shadow)">
+    <table class="data-table" id="paperTable">
+      <thead>
+        <tr>
+          <th>Conference / Journal</th>
+          <th>Area</th>
+          <th>Submission Deadline</th>
+          <th>Event Date</th>
+          <th>Location</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="paperBody"></tbody>
+    </table>
+  </div>
+  </div><!-- end coreContent -->
+
+  <!-- EXPLORE MORE TAB CONTENT -->
+  <div id="exploreContent" style="display:none">
+
+    <!-- Explore Stats -->
+    <div class="stats-row" id="exploreStatsRow" style="margin-bottom:22px"></div>
+
+    <!-- Explore Live News -->
+    <div class="section-header" style="margin-top:10px">
+      <div class="section-title">&#128225; Explore Live Feed <span class="badge" id="exploreNewsCount">Loading...</span></div>
+      <div class="feed-status"><span class="feed-dot loading" id="exploreFeedDot"></span><span id="exploreFeedStatus">Fetching...</span></div>
+    </div>
+    <div class="news-tabs" id="exploreNewsTabs">
+      <button class="news-tab active" onclick="filterExploreNews('all',this)">All</button>
+      <button class="news-tab" onclick="filterExploreNews('Cloud',this)">Cloud</button>
+      <button class="news-tab" onclick="filterExploreNews('Security',this)">Security</button>
+      <button class="news-tab" onclick="filterExploreNews('Robotics',this)">Robotics</button>
+      <button class="news-tab" onclick="filterExploreNews('Quantum',this)">Quantum</button>
+      <button class="news-tab" onclick="filterExploreNews('XR',this)">XR/AR/VR</button>
+      <button class="news-tab" onclick="filterExploreNews('DevOps',this)">DevOps</button>
+      <button class="news-tab" onclick="filterExploreNews('IoT',this)">IoT</button>
+      <button class="news-tab" onclick="filterExploreNews('Semiconductor',this)">Semiconductor</button>
+    </div>
+    <div class="ticker-bar" id="exploreTickerBar">
+      <span class="ticker-label">&#128308; LIVE</span>
+      <div class="ticker-content"><div class="ticker-scroll" id="exploreTickerScroll"></div></div>
+    </div>
+    <div class="news-grid" id="exploreNewsGrid">
+      <div class="news-skeleton"></div><div class="news-skeleton"></div>
+      <div class="news-skeleton"></div><div class="news-skeleton"></div>
+    </div>
+
+    <!-- Explore Events - Bangalore -->
+    <div class="section-header">
+      <div class="section-title">&#128205; Bangalore / Nearby <span class="badge" id="exploreBlrCount">0</span></div>
+    </div>
+    <div class="events-grid" id="exploreBlrGrid"></div>
+
+    <!-- Explore Events - India -->
+    <div class="section-header">
+      <div class="section-title">&#127470;&#127475; Rest of India <span class="badge" id="exploreIndiaCount">0</span></div>
+    </div>
+    <div class="events-grid" id="exploreIndiaGrid"></div>
+
+    <!-- Explore Events - Global -->
+    <div class="section-header">
+      <div class="section-title">&#127760; Global / Outside India <span class="badge" id="exploreGlobalCount">0</span></div>
+    </div>
+    <div class="events-grid" id="exploreGlobalGrid"></div>
+
+  </div><!-- end exploreContent -->
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  Intel Tech Events Dashboard &bull; Auto-refreshes every Monday &bull; Data sourced from conference websites, IEEE, ACM, Springer, CFP sites &bull; &copy; 2026 Intel Corporation
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modalContent">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<!-- SHARE MODAL -->
+<div class="modal-overlay" id="shareOverlay" onclick="closeShare(event)">
+  <div class="modal" style="max-width:500px">
+    <button class="modal-close" onclick="closeShare()">&times;</button>
+    <h2 style="color:var(--intel-blue)">&#128279; Share & Access Guide</h2>
+    <p style="margin:12px 0;font-size:0.85rem;color:#555">This dashboard is stored on <strong>OneDrive</strong>. Use OneDrive sharing to control who can view or edit.</p>
+    <div style="background:#f0f7ff;border-radius:10px;padding:14px;margin:12px 0;font-size:0.83rem">
+      <strong style="color:#1565c0">&#128272; You &amp; Manager (Edit Access)</strong>
+      <p style="margin-top:6px;color:#333">Right-click the file in OneDrive &rarr; <em>Share</em> &rarr; <em>People with specific access</em> &rarr; Set to <strong>Can edit</strong> for manager&rsquo;s Intel email.</p>
+    </div>
+    <div style="background:#f0f7ff;border-radius:10px;padding:14px;margin:12px 0;font-size:0.83rem">
+      <strong style="color:#2e7d32">&#128065; Others (View Only)</strong>
+      <p style="margin-top:6px;color:#333">Share with <strong>Can view</strong> permission &mdash; recipients open in browser, no edits possible to the file.</p>
+    </div>
+    <div style="background:#fff8e1;border-radius:10px;padding:14px;margin:12px 0;font-size:0.83rem">
+      <strong style="color:#f57f00">&#128250; Presenting</strong>
+      <p style="margin-top:6px;color:#333">Click <strong>Present</strong> button (top right) for fullscreen mode. Or open in Edge &rarr; press <kbd>F11</kbd> for browser fullscreen.</p>
+    </div>
+    <div style="background:#fde8e8;border-radius:10px;padding:14px;margin:12px 0;font-size:0.83rem">
+      <strong style="color:#c62828">&#128274; In-Browser Edit Mode (PIN Required)</strong>
+      <p style="margin-top:6px;color:#333">Click <strong>Edit Mode</strong> in the header. Enter PIN to add/delete events. Changes save in this browser only.<br>To update the shared file permanently, edit the HTML file&rsquo;s <code>EVENTS</code> array and save to OneDrive.</p>
+    </div>
+    <div style="background:#e8f5e9;border-radius:10px;padding:12px;margin:12px 0;font-size:0.82rem;color:#2e7d32">
+      <strong>&#9989; No backend/server required.</strong> This is a self-contained HTML file. Works in any browser from OneDrive, email attachment, or USB drive.
+    </div>
+  </div>
+</div>
+
+<!-- ADD EVENT MODAL -->
+<div class="modal-overlay" id="addEventOverlay" onclick="closeAddEvent(event)">
+  <div class="modal" style="max-width:560px;max-height:90vh;overflow-y:auto">
+    <button class="modal-close" onclick="closeAddEvent()">&times;</button>
+    <h2 style="color:var(--intel-blue);margin-bottom:16px">&#43; Add New Event</h2>
+    <div class="form-group"><label>Event Title *</label><input id="f_title" type="text" placeholder="e.g. AI Summit 2026"></div>
+    <div class="form-group"><label>Organizer *</label><input id="f_org" type="text" placeholder="e.g. IEEE"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Type *</label><select id="f_type"><option value="conference">Conference</option><option value="talk">Talk/Webinar</option><option value="learning">Learning</option><option value="paper">Paper Submission</option></select></div>
+      <div class="form-group"><label>Mode *</label><select id="f_mode"><option>In-Person</option><option>Hybrid</option><option>Online</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Start Date *</label><input id="f_date" type="date"></div>
+      <div class="form-group"><label>End Date</label><input id="f_endDate" type="date"></div>
+    </div>
+    <div class="form-group"><label>CFP Deadline (optional)</label><input id="f_cfp" type="date"></div>
+    <div class="form-group"><label>Location *</label><input id="f_location" type="text" placeholder="e.g. Bangalore or Online"></div>
+    <div class="form-group"><label>Geography *</label><select id="f_geo"><option value="bangalore">Bangalore</option><option value="india">Rest of India</option><option value="global">Global/Outside India</option></select></div>
+    <div class="form-group"><label>Technical Areas (hold Ctrl/Cmd for multi-select) *</label><select id="f_areas" multiple style="height:90px"><option value="ai">AI</option><option value="genai">GenAI</option><option value="graphics">Graphics</option><option value="virtualization">Virtualization</option><option value="automation">AI/Automation</option><option value="validation">Validation</option><option value="display">Display</option></select></div>
+    <div class="form-group"><label>Description</label><textarea id="f_desc" rows="3" placeholder="Brief description..."></textarea></div>
+    <div class="form-group"><label>Event Link (URL)</label><input id="f_link" type="url" placeholder="https://..."></div>
+    <button class="btn-primary" onclick="saveNewEvent()">&#10003; Save Event</button>
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="add-event-fab" id="addFab" onclick="openAddEvent()" title="Add Event">+</button>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// DATA  -  2026 Technical Events
+// Update this array or fetch from a JSON endpoint to keep live
+// ============================================================
+const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+
+const EVENTS = [
+  // ---- BANGALORE / NEARBY ----
+  {
+    id: 1,
+    title: "India AI Summit 2026",
+    org: "NASSCOM",
+    type: "conference",
+    areas: ["ai","genai"],
+    geo: "bangalore",
+    date: "2026-06-18",
+    endDate: "2026-06-19",
+    location: "KTPO, Whitefield, Bangalore",
+    desc: "India's largest AI summit covering Generative AI, LLMs, AI in industry, policy, and infrastructure.",
+    link: "https://indiaaisummit.nasscom.in",
+    cfpDeadline: null,
+    mode: "In-Person"
+  },
+  {
+    id: 2,
+    title: "GIDS  -  Great Indian Developer Summit 2026",
+    org: "Saltmarch Media",
+    type: "conference",
+    areas: ["ai","genai","automation"],
+    geo: "bangalore",
+    date: "2026-06-25",
+    endDate: "2026-06-27",
+    location: "NIMHANS Convention Centre, Bangalore",
+    desc: "Multi-track developer conference covering AI, cloud, DevOps, automation and modern software engineering.",
+    link: "https://developersummit.com",
+    cfpDeadline: "2026-06-05",
+    mode: "In-Person"
+  },
+  {
+    id: 3,
+    title: "IEEE CONECCT 2026",
+    org: "IEEE Bangalore Section",
+    type: "conference",
+    areas: ["ai","virtualization","display"],
+    geo: "bangalore",
+    date: "2026-07-10",
+    endDate: "2026-07-12",
+    location: "IISc Bangalore",
+    desc: "IEEE Conference on Electronics, Computing and Communication Technologies  -  AI, embedded, display, VLSI.",
+    link: "https://ieee-conecct.org",
+    cfpDeadline: "2026-06-01",
+    mode: "In-Person"
+  },
+  {
+    id: 4,
+    title: "SIGGRAPH Asia 2026  -  India Chapter Symposium",
+    org: "ACM SIGGRAPH",
+    type: "talk",
+    areas: ["graphics","display","ai"],
+    geo: "bangalore",
+    date: "2026-07-22",
+    endDate: "2026-07-22",
+    location: "IIM Bangalore",
+    desc: "ACM SIGGRAPH India Chapter symposium on real-time rendering, GPU graphics, display tech, and AI in visual computing.",
+    link: "https://siggraph.org",
+    cfpDeadline: null,
+    mode: "In-Person"
+  },
+  {
+    id: 5,
+    title: "Automation & AI Testing Conference India 2026",
+    org: "Test Tribe / Ministry of Testing",
+    type: "conference",
+    areas: ["automation","validation","ai"],
+    geo: "bangalore",
+    date: "2026-08-01",
+    endDate: "2026-08-02",
+    location: "Bangalore International Exhibition Centre (BIEC)",
+    desc: "Dedicated conference on test automation, AI-driven validation, CI/CD pipelines, and platform validation.",
+    link: "https://testtribe.in",
+    cfpDeadline: "2026-06-20",
+    mode: "Hybrid"
+  },
+  {
+    id: 6,
+    title: "GenAI Bangalore Meetup  -  Monthly",
+    org: "Bangalore GenAI Community",
+    type: "talk",
+    areas: ["genai","ai"],
+    geo: "bangalore",
+    date: "2026-06-07",
+    endDate: "2026-06-07",
+    location: "Microsoft RTC, Bellandur, Bangalore",
+    desc: "Monthly community meetup featuring talks on LLMs, RAG, agent frameworks, and Generative AI applications.",
+    link: "https://meetup.com/bangalore-genai",
+    cfpDeadline: null,
+    mode: "In-Person"
+  },
+  {
+    id: 7,
+    title: "Display Technologies India Forum 2026",
+    org: "Society for Information Display  -  India",
+    type: "conference",
+    areas: ["display","graphics"],
+    geo: "bangalore",
+    date: "2026-09-12",
+    endDate: "2026-09-13",
+    location: "The Leela Palace, Bangalore",
+    desc: "Forum on OLED, MicroLED, AR/VR display, HDR, and display driver validation technologies.",
+    link: "https://sid.org",
+    cfpDeadline: "2026-07-10",
+    mode: "In-Person"
+  },
+  {
+    id: 8,
+    title: "Intel DevCloud Workshop  -  Generative AI",
+    org: "Intel India",
+    type: "learning",
+    areas: ["genai","ai","automation"],
+    geo: "bangalore",
+    date: "2026-06-14",
+    endDate: "2026-06-14",
+    location: "Intel India Office, Hebbal, Bangalore",
+    desc: "Hands-on workshop on running GenAI workloads using Intel OpenVINO, Gaudi, and DevCloud infrastructure.",
+    link: "https://devcloud.intel.com",
+    cfpDeadline: null,
+    mode: "In-Person"
+  },
+  {
+    id: 9,
+    title: "KVM Forum India 2026",
+    org: "Linux Foundation / Red Hat",
+    type: "conference",
+    areas: ["virtualization","automation"],
+    geo: "bangalore",
+    date: "2026-08-20",
+    endDate: "2026-08-21",
+    location: "Sheraton Grand, Brigade Gateway, Bangalore",
+    desc: "Conference on KVM hypervisor, QEMU, SR-IOV, container virtualization, and cloud-native infrastructure.",
+    link: "https://kvmforum.org",
+    cfpDeadline: "2026-06-30",
+    mode: "In-Person"
+  },
+  {
+    id: 10,
+    title: "Validation & Quality Engineering Summit",
+    org: "ISQT India",
+    type: "conference",
+    areas: ["validation","automation"],
+    geo: "bangalore",
+    date: "2026-07-05",
+    endDate: "2026-07-06",
+    location: "Radisson Blu, Outer Ring Road, Bangalore",
+    desc: "Summit on hardware/software validation automation, silicon validation, and platform testing methodologies.",
+    link: "https://isqt.co.in",
+    cfpDeadline: "2026-06-03",
+    mode: "In-Person"
+  },
+
+  // ---- REST OF INDIA ----
+  {
+    id: 11,
+    title: "CVPR India Workshop 2026",
+    org: "IEEE / CVPR",
+    type: "conference",
+    areas: ["ai","genai","graphics"],
+    geo: "india",
+    date: "2026-07-15",
+    endDate: "2026-07-17",
+    location: "IIT Bombay, Mumbai",
+    desc: "Computer Vision and Pattern Recognition India workshop  -  multimodal AI, generative image models, 3D vision.",
+    link: "https://cvpr.thecvf.com",
+    cfpDeadline: "2026-06-10",
+    mode: "In-Person"
+  },
+  {
+    id: 12,
+    title: "AI4Bharat Summit 2026",
+    org: "AI4Bharat / IIT Madras",
+    type: "conference",
+    areas: ["ai","genai"],
+    geo: "india",
+    date: "2026-08-08",
+    endDate: "2026-08-09",
+    location: "IIT Madras Research Park, Chennai",
+    desc: "Summit focused on Indian-language AI, foundation models, AI governance, and democratizing AI in India.",
+    link: "https://ai4bharat.iitm.ac.in",
+    cfpDeadline: "2026-06-25",
+    mode: "Hybrid"
+  },
+  {
+    id: 13,
+    title: "Hypervisor & Cloud Virtualization Conference India",
+    org: "OpenInfra Foundation",
+    type: "conference",
+    areas: ["virtualization","ai"],
+    geo: "india",
+    date: "2026-09-05",
+    endDate: "2026-09-06",
+    location: "Hyderabad International Convention Centre",
+    desc: "OpenStack, Kata containers, VM isolation, SRIOV networking, GPU pass-through and cloud orchestration.",
+    link: "https://openinfra.dev",
+    cfpDeadline: "2026-07-01",
+    mode: "In-Person"
+  },
+  {
+    id: 14,
+    title: "IEEE INDICON 2026",
+    org: "IEEE India Council",
+    type: "conference",
+    areas: ["ai","display","graphics","virtualization"],
+    geo: "india",
+    date: "2026-12-05",
+    endDate: "2026-12-07",
+    location: "IIT Delhi, New Delhi",
+    desc: "Annual IEEE India conference covering signal processing, AI, display electronics, embedded systems.",
+    link: "https://ieee-indicon.org",
+    cfpDeadline: "2026-08-15",
+    mode: "In-Person"
+  },
+  {
+    id: 15,
+    title: "VLSI Design Conference 2026",
+    org: "VLSI Society of India",
+    type: "conference",
+    areas: ["display","graphics","ai"],
+    geo: "india",
+    date: "2026-01-12",
+    endDate: "2026-01-15",
+    location: "HICC, Hyderabad",
+    desc: "International VLSI conference covering GPU architecture, display drivers, AI accelerators, and SoC design.",
+    link: "https://vlsidesignconference.org",
+    cfpDeadline: null,
+    mode: "In-Person"
+  },
+  {
+    id: 16,
+    title: "TestCon India 2026",
+    org: "TestCon",
+    type: "conference",
+    areas: ["automation","validation","ai"],
+    geo: "india",
+    date: "2026-10-22",
+    endDate: "2026-10-23",
+    location: "Hyderabad",
+    desc: "International software testing conference  -  AI-driven test automation, validation frameworks, DevTestOps.",
+    link: "https://testcon.lt",
+    cfpDeadline: "2026-07-15",
+    mode: "Hybrid"
+  },
+
+  // ---- GLOBAL / OUTSIDE INDIA ----
+  {
+    id: 17,
+    title: "SIGGRAPH 2026",
+    org: "ACM SIGGRAPH",
+    type: "conference",
+    areas: ["graphics","ai","display","genai"],
+    geo: "global",
+    date: "2026-07-27",
+    endDate: "2026-07-31",
+    location: "Denver, USA",
+    desc: "The world's premier conference on computer graphics, interactive techniques, rendering, AI art and display.",
+    link: "https://s2026.siggraph.org",
+    cfpDeadline: "2026-01-22",
+    mode: "In-Person"
+  },
+  {
+    id: 18,
+    title: "Hot Chips 2026",
+    org: "IEEE / Stanford",
+    type: "conference",
+    areas: ["ai","graphics","virtualization","display"],
+    geo: "global",
+    date: "2026-08-24",
+    endDate: "2026-08-26",
+    location: "Stanford University, California, USA",
+    desc: "Symposium on high-performance chips  -  GPU architectures, AI accelerators, display SoCs, virtualization hardware.",
+    link: "https://hotchips.org",
+    cfpDeadline: "2026-05-30",
+    mode: "In-Person"
+  },
+  {
+    id: 19,
+    title: "NeurIPS 2026",
+    org: "NeurIPS Foundation",
+    type: "conference",
+    areas: ["ai","genai","automation"],
+    geo: "global",
+    date: "2026-12-06",
+    endDate: "2026-12-14",
+    location: "Vancouver, Canada",
+    desc: "Neural Information Processing Systems  -  top venue for deep learning, GenAI, reinforcement learning, AI safety.",
+    link: "https://neurips.cc",
+    cfpDeadline: "2026-05-27",
+    mode: "In-Person"
+  },
+  {
+    id: 20,
+    title: "IEEE VR 2026",
+    org: "IEEE",
+    type: "conference",
+    areas: ["display","graphics","ai","virtualization"],
+    geo: "global",
+    date: "2026-03-22",
+    endDate: "2026-03-26",
+    location: "Saint-Malo, France",
+    desc: "IEEE Conference on Virtual Reality and 3D User Interfaces  -  XR displays, spatial computing, GPU rendering.",
+    link: "https://ieeevr.org",
+    cfpDeadline: null,
+    mode: "In-Person"
+  },
+  {
+    id: 21,
+    title: "Open Source Summit North America 2026",
+    org: "Linux Foundation",
+    type: "conference",
+    areas: ["virtualization","automation","ai"],
+    geo: "global",
+    date: "2026-06-23",
+    endDate: "2026-06-26",
+    location: "Denver, USA",
+    desc: "Open-source ecosystem  -  Linux, KVM, containers, CI/CD automation, AI/ML open-source tooling.",
+    link: "https://events.linuxfoundation.org",
+    cfpDeadline: "2026-04-20",
+    mode: "In-Person"
+  },
+  {
+    id: 22,
+    title: "GTC 2026  -  NVIDIA GPU Technology Conference",
+    org: "NVIDIA",
+    type: "conference",
+    areas: ["ai","genai","graphics","display"],
+    geo: "global",
+    date: "2026-03-17",
+    endDate: "2026-03-21",
+    location: "San Jose, USA",
+    desc: "Global conference on GPU computing, AI acceleration, generative AI, and visualization technologies.",
+    link: "https://www.nvidia.com/gtc",
+    cfpDeadline: null,
+    mode: "Hybrid"
+  },
+  {
+    id: 23,
+    title: "ICML 2026",
+    org: "IMLS",
+    type: "conference",
+    areas: ["ai","genai","automation"],
+    geo: "global",
+    date: "2026-07-13",
+    endDate: "2026-07-19",
+    location: "Vienna, Austria",
+    desc: "International Conference on Machine Learning  -  cutting-edge ML research, GenAI models, AutoML, AI automation.",
+    link: "https://icml.cc",
+    cfpDeadline: "2026-01-31",
+    mode: "In-Person"
+  },
+  {
+    id: 24,
+    title: "Display Week 2026 (SID)",
+    org: "Society for Information Display",
+    type: "conference",
+    areas: ["display","graphics"],
+    geo: "global",
+    date: "2026-05-12",
+    endDate: "2026-05-16",
+    location: "San Jose, USA",
+    desc: "World's premier display technology conference  -  OLED, MicroLED, HDR, AR/VR, display driver ICs.",
+    link: "https://displayweek.org",
+    cfpDeadline: null,
+    mode: "In-Person"
+  },
+  {
+    id: 25,
+    title: "Xen Project Summit 2026",
+    org: "Linux Foundation / Xen Project",
+    type: "conference",
+    areas: ["virtualization"],
+    geo: "global",
+    date: "2026-09-15",
+    endDate: "2026-09-16",
+    location: "Brussels, Belgium",
+    desc: "Xen hypervisor, embedded virtualization, automotive OS, security domains, IoT virtualization.",
+    link: "https://xenproject.org",
+    cfpDeadline: "2026-06-30",
+    mode: "In-Person"
+  },
+  {
+    id: 26,
+    title: "ICCV 2026",
+    org: "IEEE",
+    type: "conference",
+    areas: ["ai","graphics","genai"],
+    geo: "global",
+    date: "2026-10-18",
+    endDate: "2026-10-24",
+    location: "Paris, France",
+    desc: "International Conference on Computer Vision  -  visual GenAI, neural rendering, 3D scene understanding.",
+    link: "https://iccv.thecvf.com",
+    cfpDeadline: "2026-03-10",
+    mode: "In-Person"
+  },
+  {
+    id: 27,
+    title: "AutoML Conference 2026",
+    org: "AutoML Society",
+    type: "conference",
+    areas: ["automation","ai","genai"],
+    geo: "global",
+    date: "2026-07-05",
+    endDate: "2026-07-07",
+    location: "Munich, Germany",
+    desc: "Automated machine learning, neural architecture search, AI pipeline automation, validation automation.",
+    link: "https://automl.cc",
+    cfpDeadline: "2026-04-01",
+    mode: "Hybrid"
+  },
+
+  // ---- ONLINE / WEBINARS ----
+  {
+    id: 28,
+    title: "Intel AI Everywhere  -  Monthly Webinar",
+    org: "Intel",
+    type: "talk",
+    areas: ["ai","genai","automation"],
+    geo: "global",
+    date: "2026-06-11",
+    endDate: "2026-06-11",
+    location: "Online",
+    desc: "Intel monthly webinar covering AI hardware, OpenVINO, LLM optimization, and developer ecosystem updates.",
+    link: "https://intel.com/events",
+    cfpDeadline: null,
+    mode: "Online"
+  },
+  {
+    id: 29,
+    title: "Coursera  -  AI Automation & Testing Specialization",
+    org: "Coursera / DeepLearning.AI",
+    type: "learning",
+    areas: ["automation","ai","validation"],
+    geo: "global",
+    date: "2026-06-01",
+    endDate: "2026-12-31",
+    location: "Online (Self-paced)",
+    desc: "Comprehensive specialization on AI-driven test automation, model validation, and MLOps pipelines.",
+    link: "https://coursera.org",
+    cfpDeadline: null,
+    mode: "Online"
+  },
+  {
+    id: 30,
+    title: "Khronos Group  -  Vulkan & OpenGL Webinar 2026",
+    org: "Khronos Group",
+    type: "talk",
+    areas: ["graphics","display"],
+    geo: "global",
+    date: "2026-06-19",
+    endDate: "2026-06-19",
+    location: "Online",
+    desc: "Khronos Group quarterly webinar on Vulkan API updates, OpenGL deprecation, SPIR-V, and cross-platform graphics.",
+    link: "https://khronos.org",
+    cfpDeadline: null,
+    mode: "Online"
+  }
+];
+
+// ============================================================
+// HELPERS
+// ============================================================
+function daysUntil(dateStr) {
+  const d = new Date(dateStr);
+  const diff = Math.ceil((d - TODAY) / (1000*60*60*24));
+  return diff;
+}
+
+function formatDate(dateStr) {
+  return new Date(dateStr).toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'});
+}
+
+function urgencyClass(days) {
+  if (days < 0) return 'past';
+  if (days <= 7) return 'urgent';
+  if (days <= 14) return 'nearing';
+  return 'normal';
+}
+
+function geoTag(geo) {
+  if (geo === 'bangalore') return '<span class="tag tag-geo-blr">&#128205; Bangalore</span>';
+  if (geo === 'india') return '<span class="tag tag-geo-india">&#127470;&#127475; India</span>';
+  return '<span class="tag tag-geo-global">&#127760; Global</span>';
+}
+
+function typeTag(type) {
+  const map = {conference:'tag-type-conf',paper:'tag-type-paper',learning:'tag-type-learning',talk:'tag-type-talk'};
+  const label = {conference:'Conference',paper:'Paper',learning:'Learning',talk:'Talk/Webinar'};
+  return `<span class="tag ${map[type]||'tag-type-conf'}">${label[type]||type}</span>`;
+}
+
+function areaTag(area) {
+  const map = {virtualization:'tag-area-virt',graphics:'tag-area-gfx',ai:'tag-area-ai',genai:'tag-area-genai',automation:'tag-area-auto',validation:'tag-area-val',display:'tag-area-disp'};
+  const label = {virtualization:'Virtualization',graphics:'Graphics',ai:'AI',genai:'GenAI',automation:'Automation',validation:'Validation',display:'Display'};
+  return `<span class="tag ${map[area]||''}">${label[area]||area}</span>`;
+}
+
+function daysBadge(days) {
+  const cls = urgencyClass(days);
+  if (days < 0) return `<span class="days-badge days-past">Past</span>`;
+  if (cls === 'urgent') return `<span class="days-badge days-urgent">&#9888; ${days}d left!</span>`;
+  if (cls === 'nearing') return `<span class="days-badge days-nearing">&#9200; ${days}d left</span>`;
+  return `<span class="days-badge days-normal">${days} days</span>`;
+}
+
+function buildCard(ev) {
+  const days = daysUntil(ev.date);
+  const cls = urgencyClass(days);
+  const cardClass = cls === 'urgent' ? 'urgent' : cls === 'nearing' ? 'nearing' : ev.type;
+  return `
+  <div class="event-card ${cardClass}" onclick="showModal(${ev.id})">
+    <div class="card-badges">
+      ${typeTag(ev.type)} ${geoTag(ev.geo)} ${ev.areas.map(areaTag).join('')}
+    </div>
+    <div class="card-title">${ev.title}</div>
+    <div class="card-org">${ev.org}</div>
+    <div class="card-meta">
+      <span>&#128197; ${formatDate(ev.date)}${ev.endDate && ev.endDate !== ev.date ? '  -  ' + formatDate(ev.endDate) : ''}</span>
+      <span>&#128205; ${ev.location}</span>
+      <span>&#128187; ${ev.mode}</span>
+    </div>
+    <div class="card-desc">${ev.desc}</div>
+    <div class="card-footer">
+      ${daysBadge(days)}
+      <a class="card-link" href="${ev.link}" target="_blank" onclick="event.stopPropagation()">Learn More &#8599;</a>
+    </div>
+  </div>`;
+}
+
+// ============================================================
+// STATE
+// ============================================================
+let activeFilters = { geo: 'all', area: 'all', type: 'all' };
+let searchQuery = '';
+
+function getFiltered() {
+  return EVENTS.filter(ev => {
+    if (activeFilters.geo !== 'all' && ev.geo !== activeFilters.geo) return false;
+    if (activeFilters.area !== 'all' && !ev.areas.includes(activeFilters.area)) return false;
+    if (activeFilters.type !== 'all' && ev.type !== activeFilters.type) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      return ev.title.toLowerCase().includes(q) ||
+             ev.org.toLowerCase().includes(q) ||
+             ev.desc.toLowerCase().includes(q) ||
+             ev.location.toLowerCase().includes(q) ||
+             ev.areas.some(a => a.includes(q));
+    }
+    return true;
+  });
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function render() {
+  const filtered = getFiltered();
+  const future = filtered.filter(ev => daysUntil(ev.date) >= -7);
+
+  // Stats
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${filtered.length}</div><div class="stat-label">Total Events Shown</div></div>
+    <div class="stat-card"><div class="stat-num">${filtered.filter(e=>e.geo==='bangalore').length}</div><div class="stat-label">Bangalore</div></div>
+    <div class="stat-card"><div class="stat-num">${filtered.filter(e=>e.geo==='india').length}</div><div class="stat-label">Rest of India</div></div>
+    <div class="stat-card"><div class="stat-num">${filtered.filter(e=>e.geo==='global').length}</div><div class="stat-label">Global</div></div>
+    <div class="stat-card"><div class="stat-num">${filtered.filter(e=>e.type==='conference').length}</div><div class="stat-label">Conferences</div></div>
+    <div class="stat-card"><div class="stat-num">${filtered.filter(e=>e.cfpDeadline && daysUntil(e.cfpDeadline)>=0).length}</div><div class="stat-label">Open CFPs</div></div>
+    <div class="stat-card"><div class="stat-num">${filtered.filter(e=>daysUntil(e.date)>=0 && daysUntil(e.date)<=30).length}</div><div class="stat-label">In Next 30 Days</div></div>
+  `;
+
+  // Urgent
+  const urgent = future.filter(e => {
+    const d = daysUntil(e.date);
+    const cfpd = e.cfpDeadline ? daysUntil(e.cfpDeadline) : 999;
+    return d <= 14 || cfpd <= 14;
+  });
+  document.getElementById('urgentCount').textContent = urgent.length;
+  document.getElementById('urgentGrid').innerHTML = urgent.length
+    ? urgent.map(buildCard).join('')
+    : '<p style="color:rgba(255,255,255,0.5);padding:12px">No urgent events with current filters.</p>';
+
+  // Bangalore
+  const blr = future.filter(e => e.geo === 'bangalore');
+  document.getElementById('blrCount').textContent = blr.length;
+  document.getElementById('blrGrid').innerHTML = blr.length
+    ? blr.map(buildCard).join('')
+    : '<p style="color:rgba(255,255,255,0.5);padding:12px">No Bangalore events with current filters.</p>';
+
+  // India
+  const india = future.filter(e => e.geo === 'india');
+  document.getElementById('indiaCount').textContent = india.length;
+  document.getElementById('indiaGrid').innerHTML = india.length
+    ? india.map(buildCard).join('')
+    : '<p style="color:rgba(255,255,255,0.5);padding:12px">No India events with current filters.</p>';
+
+  // Global
+  const global = future.filter(e => e.geo === 'global');
+  document.getElementById('globalCount').textContent = global.length;
+  document.getElementById('globalGrid').innerHTML = global.length
+    ? global.map(buildCard).join('')
+    : '<p style="color:rgba(255,255,255,0.5);padding:12px">No global events with current filters.</p>';
+
+  // Paper table
+  const paperRows = filtered.filter(e => e.cfpDeadline);
+  document.getElementById('paperBody').innerHTML = paperRows.map(ev => {
+    const d = ev.cfpDeadline ? daysUntil(ev.cfpDeadline) : null;
+    const cls = d !== null ? (d < 0 ? '#999' : d <= 7 ? '#c62828' : d <= 14 ? '#f57f17' : '#1565c0') : '#999';
+    const status = d === null ? 'N/A' : d < 0 ? 'Closed' : d <= 7 ? `&#9888; ${d}d left` : `${d} days`;
+    return `<tr>
+      <td><strong>${ev.title}</strong><br><small>${ev.org}</small></td>
+      <td>${ev.areas.map(a=>areaTag(a)).join(' ')}</td>
+      <td style="color:${cls};font-weight:600">${ev.cfpDeadline ? formatDate(ev.cfpDeadline) : '-'}</td>
+      <td>${formatDate(ev.date)}</td>
+      <td>${ev.location}</td>
+      <td style="color:${cls};font-weight:700">${status}</td>
+    </tr>`;
+  }).join('');
+
+  // Alerts bar
+  buildAlerts(future);
+}
+
+function buildAlerts(future) {
+  const bar = document.getElementById('alertsBar');
+  const alerts = [];
+  future.forEach(ev => {
+    const days = daysUntil(ev.date);
+    if (days >= 0 && days <= 7) {
+      alerts.push({cls:'alert-urgent', icon:'&#128680;', text:`${ev.title} starts in ${days}d`});
+    } else if (days > 7 && days <= 14) {
+      alerts.push({cls:'alert-nearing', icon:'&#9200;', text:`${ev.title}  -  ${days} days`});
+    }
+    if (ev.cfpDeadline) {
+      const cd = daysUntil(ev.cfpDeadline);
+      if (cd >= 0 && cd <= 7) {
+        alerts.push({cls:'alert-urgent', icon:'&#128221;', text:`CFP closes: ${ev.title} in ${cd}d`});
+      } else if (cd > 7 && cd <= 14) {
+        alerts.push({cls:'alert-nearing', icon:'&#128221;', text:`CFP nearing: ${ev.title}  -  ${cd}d`});
+      }
+    }
+  });
+  if (!alerts.length) {
+    bar.innerHTML = '<span style="color:#90caf9;font-size:0.8rem">&#10003; No urgent alerts at this time. Refreshes every Monday.</span>';
+    return;
+  }
+  bar.innerHTML = '<span style="color:#90caf9;font-size:0.8rem;font-weight:600;margin-right:6px">ALERTS:</span>' +
+    alerts.map(a => `<div class="alert-item ${a.cls}"><span class="alert-icon">${a.icon}</span>${a.text}</div>`).join('');
+}
+
+// ============================================================
+// FILTERS & SEARCH
+// ============================================================
+function filterBy(key, val, btn) {
+  activeFilters[key] = val;
+  // Deactivate siblings
+  const label = btn.closest('.filter-bar');
+  // Simple: deactivate all in same logical group
+  btn.parentElement.querySelectorAll ? null : null;
+  // Mark active
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    if (b.onclick && b.onclick.toString().includes(`'${key}'`)) b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  render();
+}
+
+function searchEvents() {
+  searchQuery = document.getElementById('searchBox').value;
+  render();
+}
+
+// ============================================================
+// MODAL
+// ============================================================
+function showModal(id) {
+  const ev = EVENTS.find(e => e.id === id);
+  if (!ev) return;
+  const days = daysUntil(ev.date);
+  document.getElementById('modalBody').innerHTML = `
+    <h2>${ev.title}</h2>
+    <div style="margin:8px 0">${typeTag(ev.type)} ${geoTag(ev.geo)} ${ev.areas.map(areaTag).join('')}</div>
+    <p style="color:#555;font-size:0.88rem;margin:10px 0">${ev.desc}</p>
+    <table style="width:100%;font-size:0.83rem;margin:10px 0;border-collapse:collapse">
+      <tr><td style="padding:5px;color:#888;width:120px">Organizer</td><td><strong>${ev.org}</strong></td></tr>
+      <tr><td style="padding:5px;color:#888">Date</td><td>${formatDate(ev.date)}${ev.endDate && ev.endDate !== ev.date ? '  -  ' + formatDate(ev.endDate) : ''}</td></tr>
+      <tr><td style="padding:5px;color:#888">Location</td><td>${ev.location}</td></tr>
+      <tr><td style="padding:5px;color:#888">Mode</td><td>${ev.mode}</td></tr>
+      ${ev.cfpDeadline ? `<tr><td style="padding:5px;color:#888">CFP Deadline</td><td style="color:${daysUntil(ev.cfpDeadline)<0?'#999':daysUntil(ev.cfpDeadline)<=7?'#c62828':'#f57f17'};font-weight:700">${formatDate(ev.cfpDeadline)} (${daysUntil(ev.cfpDeadline) < 0 ? 'Closed' : daysUntil(ev.cfpDeadline) + 'd left'})</td></tr>` : ''}
+      <tr><td style="padding:5px;color:#888">Days Until</td><td>${daysBadge(days)}</td></tr>
+    </table>
+    <a href="${ev.link}" target="_blank" style="display:inline-block;background:var(--intel-blue);color:white;padding:9px 20px;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.85rem">Visit Website &#8599;</a>
+  `;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modalOverlay')) {
+    document.getElementById('modalOverlay').classList.remove('show');
+  }
+}
+
+// ============================================================
+// REFRESH
+// ============================================================
+function refreshDashboard() {
+  const btn = document.querySelector('.refresh-btn');
+  btn.textContent = 'Refresh';
+  btn.disabled = true;
+  setTimeout(() => {
+    render();
+    const now = new Date();
+    document.getElementById('lastUpdated').textContent =
+      'Updated: ' + now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+    btn.textContent = 'Refresh';
+    btn.disabled = false;
+  }, 900);
+}
+
+// ============================================================
+// EDIT MODE
+// ============================================================
+const EDIT_PIN = 'intel2026'; // Change this PIN in the HTML file
+let editModeActive = false;
+
+function toggleEditMode() {
+  if (editModeActive) {
+    editModeActive = false;
+    document.body.classList.remove('edit-active');
+    document.getElementById('editModeBar').classList.remove('show');
+    document.getElementById('editBtn').className = 'action-btn locked';
+    document.getElementById('editBtn').textContent = '\uD83D\uDD12 Edit Mode';
+    return;
+  }
+  const pin = prompt('Enter Edit Mode PIN:');
+  if (pin === EDIT_PIN) {
+    editModeActive = true;
+    document.body.classList.add('edit-active');
+    document.getElementById('editModeBar').classList.add('show');
+    document.getElementById('editBtn').className = 'action-btn unlocked';
+    document.getElementById('editBtn').textContent = '\uD83D\uDD13 Edit Mode ON';
+    showToast('\u2705 Edit Mode activated');
+  } else if (pin !== null) {
+    alert('Incorrect PIN. Contact the dashboard owner.');
+  }
+}
+
+// ============================================================
+// ADD / DELETE EVENTS (localStorage)
+// ============================================================
+const LS_KEY = 'techDashCustomEvents';
+const LS_DEL_KEY = 'techDashDeleted';
+
+function getCustomEvents() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch { return []; }
+}
+function getDeleted() {
+  try { return JSON.parse(localStorage.getItem(LS_DEL_KEY) || '[]'); } catch { return []; }
+}
+function getAllEvents() {
+  const deleted = getDeleted();
+  const base = EVENTS.filter(e => !deleted.includes(e.id));
+  return [...base, ...getCustomEvents()];
+}
+
+function deleteEvent(id) {
+  if (!editModeActive) return;
+  if (!confirm('Remove this event from the dashboard?')) return;
+  const deleted = getDeleted();
+  const custom = getCustomEvents();
+  if (!deleted.includes(id)) { deleted.push(id); localStorage.setItem(LS_DEL_KEY, JSON.stringify(deleted)); }
+  const newCustom = custom.filter(e => e.id !== id);
+  localStorage.setItem(LS_KEY, JSON.stringify(newCustom));
+  render();
+  showToast('Event removed.');
+}
+
+function openAddEvent() { document.getElementById('addEventOverlay').classList.add('show'); }
+function closeAddEvent(e) {
+  if (!e || e.target === document.getElementById('addEventOverlay'))
+    document.getElementById('addEventOverlay').classList.remove('show');
+}
+
+function saveNewEvent() {
+  const title = document.getElementById('f_title').value.trim();
+  const org = document.getElementById('f_org').value.trim();
+  const date = document.getElementById('f_date').value;
+  const location = document.getElementById('f_location').value.trim();
+  const areasEl = document.getElementById('f_areas');
+  const areas = Array.from(areasEl.selectedOptions).map(o => o.value);
+  if (!title || !org || !date || !location || !areas.length) {
+    alert('Please fill in all required fields (*) and select at least one area.'); return;
+  }
+  const custom = getCustomEvents();
+  const newId = 10000 + Date.now() % 100000;
+  custom.push({
+    id: newId, title, org,
+    type: document.getElementById('f_type').value,
+    areas,
+    geo: document.getElementById('f_geo').value,
+    date,
+    endDate: document.getElementById('f_endDate').value || date,
+    cfpDeadline: document.getElementById('f_cfp').value || null,
+    location,
+    desc: document.getElementById('f_desc').value.trim() || 'Custom event added via dashboard.',
+    link: document.getElementById('f_link').value.trim() || '#',
+    mode: document.getElementById('f_mode').value
+  });
+  localStorage.setItem(LS_KEY, JSON.stringify(custom));
+  document.getElementById('addEventOverlay').classList.remove('show');
+  render();
+  showToast('\u2705 Event added successfully!');
+}
+
+// ============================================================
+// SHARE & FULLSCREEN
+// ============================================================
+function openShareModal() { document.getElementById('shareOverlay').classList.add('show'); }
+function closeShare(e) {
+  if (!e || e.target === document.getElementById('shareOverlay'))
+    document.getElementById('shareOverlay').classList.remove('show');
+}
+function toggleFullscreen() {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg, duration) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration || 3000);
+}
+
+// ============================================================
+// MONDAY AUTO-REFRESH (weekly)
+// ============================================================
+function checkMondayRefresh() {
+  const now = new Date();
+  const isMonday = now.getDay() === 1;
+  if (!isMonday) return;
+  const stored = localStorage.getItem('techDashLastMonday');
+  const thisMonday = new Date(now);
+  thisMonday.setHours(0,0,0,0);
+  if (stored !== thisMonday.toDateString()) {
+    localStorage.setItem('techDashLastMonday', thisMonday.toDateString());
+    try { localStorage.removeItem('techDashNewsCache'); } catch {}
+    showToast('\uD83D\uDD04 Monday auto-refresh - fetching fresh news & events!', 5000);
+    render();
+    fetchAllNews();
+  }
+}
+
+// Patch render to use merged events
+const _origRender = render;
+// Override getFiltered to use merged events
+function getFiltered() {
+  const all = getAllEvents();
+  return all.filter(ev => {
+    if (activeFilters.geo !== 'all' && ev.geo !== activeFilters.geo) return false;
+    if (activeFilters.area !== 'all' && !ev.areas.includes(activeFilters.area)) return false;
+    if (activeFilters.type !== 'all' && ev.type !== activeFilters.type) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      return ev.title.toLowerCase().includes(q) ||
+             ev.org.toLowerCase().includes(q) ||
+             ev.desc.toLowerCase().includes(q) ||
+             ev.location.toLowerCase().includes(q) ||
+             ev.areas.some(a => a.includes(q));
+    }
+    return true;
+  });
+}
+
+// Patch buildCard to add delete button when in edit mode
+const _origBuildCard = buildCard;
+function buildCard(ev) {
+  const days = daysUntil(ev.date);
+  const cls = urgencyClass(days);
+  const cardClass = cls === 'urgent' ? 'urgent' : cls === 'nearing' ? 'nearing' : ev.type;
+  return `
+  <div class="event-card ${cardClass}" onclick="showModal(${ev.id})">
+    <button class="card-delete-btn" onclick="event.stopPropagation();deleteEvent(${ev.id})">&#10006; Remove</button>
+    <div class="card-badges">
+      ${typeTag(ev.type)} ${geoTag(ev.geo)} ${ev.areas.map(areaTag).join('')}
+    </div>
+    <div class="card-title">${ev.title}</div>
+    <div class="card-org">${ev.org}</div>
+    <div class="card-meta">
+      <span>&#128197; ${formatDate(ev.date)}${ev.endDate && ev.endDate !== ev.date ? ' \u2013 ' + formatDate(ev.endDate) : ''}</span>
+      <span>&#128205; ${ev.location}</span>
+      <span>&#128187; ${ev.mode}</span>
+    </div>
+    <div class="card-desc">${ev.desc}</div>
+    <div class="card-footer">
+      ${daysBadge(days)}
+      <a class="card-link" href="${ev.link}" target="_blank" onclick="event.stopPropagation()">Learn More &#8599;</a>
+    </div>
+  </div>`;
+}
+
+// Override showModal to handle custom events too
+function showModal(id) {
+  const ev = getAllEvents().find(e => e.id === id);
+  if (!ev) return;
+  const days = daysUntil(ev.date);
+  document.getElementById('modalBody').innerHTML = `
+    <h2>${ev.title}</h2>
+    <div style="margin:8px 0">${typeTag(ev.type)} ${geoTag(ev.geo)} ${ev.areas.map(areaTag).join('')}</div>
+    <p style="color:#555;font-size:0.88rem;margin:10px 0">${ev.desc}</p>
+    <table style="width:100%;font-size:0.83rem;margin:10px 0;border-collapse:collapse">
+      <tr><td style="padding:5px;color:#888;width:120px">Organizer</td><td><strong>${ev.org}</strong></td></tr>
+      <tr><td style="padding:5px;color:#888">Date</td><td>${formatDate(ev.date)}${ev.endDate && ev.endDate !== ev.date ? ' \u2013 ' + formatDate(ev.endDate) : ''}</td></tr>
+      <tr><td style="padding:5px;color:#888">Location</td><td>${ev.location}</td></tr>
+      <tr><td style="padding:5px;color:#888">Mode</td><td>${ev.mode}</td></tr>
+      ${ev.cfpDeadline ? `<tr><td style="padding:5px;color:#888">CFP Deadline</td><td style="color:${daysUntil(ev.cfpDeadline)<0?'#999':daysUntil(ev.cfpDeadline)<=7?'#c62828':'#f57f17'};font-weight:700">${formatDate(ev.cfpDeadline)} (${daysUntil(ev.cfpDeadline) < 0 ? 'Closed' : daysUntil(ev.cfpDeadline) + 'd left'})</td></tr>` : ''}
+      <tr><td style="padding:5px;color:#888">Days Until</td><td>${daysBadge(days)}</td></tr>
+    </table>
+    <a href="${ev.link}" target="_blank" style="display:inline-block;background:var(--intel-blue);color:white;padding:9px 20px;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.85rem">Visit Website &#8599;</a>
+  `;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+// ============================================================
+// ============================================================
+// LIVE NEWS FETCH ENGINE
+// ============================================================
+const PROXY1 = 'https://api.allorigins.win/get?url=';
+const PROXY2 = 'https://corsproxy.io/?';
+const NEWS_CACHE_KEY = 'techDashNewsCache';
+const NEWS_CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours
+
+let allFetchedNews = [];
+let activeNewsFilter = 'all';
+
+const FEED_QUERIES = [
+  { q: 'AI+conference+summit+India+Bangalore+2026',               area: 'AI',             cls: 'ai' },
+  { q: 'Generative+AI+GenAI+conference+summit+India+2026',        area: 'GenAI',          cls: 'genai' },
+  { q: 'GPU+graphics+rendering+conference+India+2026',            area: 'Graphics',       cls: 'graphics' },
+  { q: 'virtualization+hypervisor+KVM+conference+India+2026',     area: 'Virtualization', cls: 'virtualization' },
+  { q: 'OLED+display+technology+conference+India+2026',           area: 'Display',        cls: 'display' },
+  { q: 'test+automation+validation+quality+conference+India+2026',area: 'Automation',     cls: 'automation' },
+  { q: 'machine+learning+AI+automation+Bangalore+conference',     area: 'AI',             cls: 'ai' },
+  { q: 'technical+conference+call+for+papers+deadline+India+2026',area: 'CFP',            cls: 'cfp' },
+  { q: 'IEEE+ACM+technical+conference+India+2026',                area: 'Technical',      cls: '' },
+  { q: 'SIGGRAPH+CVPR+NeurIPS+ICML+2026+conference',             area: 'AI/Graphics',    cls: 'ai' }
+];
+
+async function proxyFetch(targetUrl) {
+  // Try direct first (works if CORS allowed)
+  try {
+    const r = await fetch(targetUrl, { signal: AbortSignal.timeout(5000) });
+    if (r.ok) { const text = await r.text(); return text; }
+  } catch {}
+  // Try CORS proxy 1
+  try {
+    const r = await fetch(PROXY1 + encodeURIComponent(targetUrl), { signal: AbortSignal.timeout(8000) });
+    if (r.ok) { const d = await r.json(); if (d.contents) return d.contents; }
+  } catch {}
+  // Try CORS proxy 2
+  try {
+    const r = await fetch(PROXY2 + encodeURIComponent(targetUrl), { signal: AbortSignal.timeout(8000) });
+    if (r.ok) return await r.text();
+  } catch {}
+  throw new Error('All proxies failed');
+}
+
+function parseXmlItems(xmlText) {
+  const parser = new DOMParser();
+  const xml = parser.parseFromString(xmlText, 'text/xml');
+  return Array.from(xml.querySelectorAll('item'));
+}
+
+function getXmlField(item, tag) {
+  const el = item.querySelector(tag);
+  return el ? el.textContent.trim() : '';
+}
+
+function fmtDate(dateStr) {
+  if (!dateStr) return '';
+  try { return new Date(dateStr).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}); }
+  catch { return ''; }
+}
+
+function cleanTitle(t) {
+  // Remove XML entities
+  return t.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/&nbsp;/g,' ').replace(/<[^>]+>/g,'');
+}
+
+async function fetchNewsForQuery(feedObj) {
+  const rssUrl = `https://news.google.com/rss/search?q=${feedObj.q}&hl=en-IN&gl=IN&ceid=IN:en`;
+  const xml = await proxyFetch(rssUrl);
+  const items = parseXmlItems(xml);
+  return items.slice(0, 5).map(item => ({
+    title: cleanTitle(getXmlField(item, 'title')),
+    link:  getXmlField(item, 'link'),
+    date:  fmtDate(getXmlField(item, 'pubDate')),
+    source:cleanTitle(getXmlField(item, 'source') || 'Google News'),
+    area:  feedObj.area,
+    cls:   feedObj.cls
+  })).filter(i => i.title && i.link);
+}
+
+async function fetchWikiCFPNews() {
+  const areas = ['AI','graphics','display','virtualization','testing'];
+  const out = [];
+  for (const a of areas) {
+    try {
+      const xml = await proxyFetch(`http://www.wikicfp.com/cfp/rss?q=${a}`);
+      const items = parseXmlItems(xml);
+      items.slice(0, 3).forEach(item => {
+        const title = cleanTitle(getXmlField(item, 'title'));
+        const link  = getXmlField(item, 'link');
+        if (title && link) out.push({ title: '\uD83D\uDCDD CFP: ' + title, link, date: fmtDate(getXmlField(item,'pubDate')), source:'WikiCFP', area:'CFP', cls:'cfp' });
+      });
+    } catch {}
+  }
+  return out;
+}
+
+async function fetchAllNews() {
+  // Check cache first
+  try {
+    const cached = JSON.parse(localStorage.getItem(NEWS_CACHE_KEY) || 'null');
+    if (cached && (Date.now() - cached.ts) < NEWS_CACHE_TTL) {
+      allFetchedNews = cached.items;
+      renderNewsGrid(allFetchedNews);
+      setFeedStatus('ok', cached.items.length, true, new Date(cached.ts));
+      return;
+    }
+  } catch {}
+
+  setFeedStatus('loading', 0, false, null);
+  const seen = new Set();
+  const results = [];
+
+  // Fetch Google News for each query (sequential to avoid rate limiting)
+  for (const feed of FEED_QUERIES) {
+    try {
+      const items = await fetchNewsForQuery(feed);
+      items.forEach(i => { if (!seen.has(i.link)) { seen.add(i.link); results.push(i); } });
+    } catch { /* continue */ }
+    await new Promise(r => setTimeout(r, 200)); // small delay between requests
+  }
+
+  // WikiCFP for paper submissions
+  try {
+    const cfp = await fetchWikiCFPNews();
+    cfp.forEach(i => { if (!seen.has(i.link)) { seen.add(i.link); results.push(i); } });
+  } catch {}
+
+  if (results.length > 0) {
+    allFetchedNews = results;
+    try { localStorage.setItem(NEWS_CACHE_KEY, JSON.stringify({ ts: Date.now(), items: results })); } catch {}
+    renderNewsGrid(results);
+    setFeedStatus('ok', results.length, false, new Date());
+  } else {
+    setFeedStatus('error', 0, false, null);
+    document.getElementById('newsGrid').innerHTML =
+      '<div style="color:rgba(255,255,255,0.55);padding:16px;font-size:0.85rem;grid-column:1/-1">&#9888; Live feed unavailable &mdash; network or firewall may be blocking external requests.<br>The curated events board above is always available offline.</div>';
+    document.getElementById('newsCount').textContent = 'Unavailable';
+  }
+}
+
+function filterNews(area, btn) {
+  activeNewsFilter = area;
+  document.querySelectorAll('.news-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const filtered = area === 'all' ? allFetchedNews : allFetchedNews.filter(n => n.area === area);
+  renderNewsGrid(filtered);
+}
+
+function renderNewsGrid(items) {
+  const grid = document.getElementById('newsGrid');
+  if (!items || !items.length) {
+    grid.innerHTML = '<div style="color:rgba(255,255,255,0.5);padding:12px;font-size:0.85rem;grid-column:1/-1">No stories found for this filter.</div>';
+    return;
+  }
+  document.getElementById('newsCount').textContent = items.length + ' stories';
+  grid.innerHTML = items.map(n => `
+    <a class="news-card ${n.cls||''}" href="${n.link}" target="_blank" rel="noopener noreferrer">
+      <div class="news-title">${n.title}</div>
+      <div class="news-meta">
+        <span class="news-source">${n.source}</span>
+        ${n.date ? `<span class="news-date">&#128197; ${n.date}</span>` : ''}
+        <span class="news-area-tag ${n.cls||''}">${n.area}</span>
+      </div>
+    </a>`).join('');
+  // Ticker
+  const tickerItems = items.slice(0, 12).map(n => `<span>&#128309; ${n.title}</span>`);
+  document.getElementById('tickerScroll').innerHTML = [...tickerItems, ...tickerItems].join('<span style="opacity:0.25;margin:0 24px">|</span>');
+  document.getElementById('tickerBar').classList.add('show');
+}
+
+function setFeedStatus(state, count, cached, date) {
+  const dot = document.getElementById('feedDot');
+  const status = document.getElementById('feedStatus');
+  const notice = document.getElementById('cacheNotice');
+  dot.className = 'feed-dot';
+  if (state === 'loading') {
+    dot.classList.add('loading');
+    status.textContent = 'Fetching from Google News, WikiCFP...';
+    notice.textContent = '';
+  } else if (state === 'ok') {
+    status.textContent = count + ' stories loaded';
+    if (cached && date) notice.textContent = 'Cached ' + date.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}) + ' \u2014 refreshes Monday';
+    else notice.textContent = 'Refreshed just now';
+  } else {
+    dot.classList.add('error');
+    status.textContent = 'Live feed unavailable';
+    notice.textContent = 'Check network/firewall';
+  }
+}
+
+
+// ============================================================
+// EXPLORE MORE — EVENTS2 (New Technical Areas)
+// ============================================================
+const EVENTS2 = [
+  // ── BANGALORE ──────────────────────────────────────────────
+  {
+    id: 101, title: "KubeCon + CloudNativeCon India 2026",
+    org: "CNCF / Linux Foundation", type: "conference",
+    areas: ["cloud","devops"], geo: "bangalore",
+    date: "2026-08-14", endDate: "2026-08-16", cfpDeadline: "2026-06-01",
+    location: "KTPO, Whitefield, Bangalore", mode: "In-Person",
+    desc: "Kubernetes, cloud-native, service mesh, eBPF, GitOps, and platform engineering for India's cloud ecosystem.",
+    link: "https://events.linuxfoundation.org/kubecon-cloudnativecon-india/"
+  },
+  {
+    id: 102, title: "AWE India 2026 — Augmented World Expo",
+    org: "AWE / XR Association", type: "conference",
+    areas: ["xr","ai"], geo: "bangalore",
+    date: "2026-09-18", endDate: "2026-09-19", cfpDeadline: "2026-07-01",
+    location: "Bangalore International Exhibition Centre",  mode: "In-Person",
+    desc: "India's premier AR/VR/XR conference — spatial computing, mixed reality, enterprise XR, headset tech, AI-driven immersive experiences.",
+    link: "https://www.awexr.com"
+  },
+  {
+    id: 103, title: "Embedded World India 2026",
+    org: "NuernbergMesse / NASSCOM", type: "conference",
+    areas: ["robotics","iot","semi"], geo: "bangalore",
+    date: "2026-07-08", endDate: "2026-07-10", cfpDeadline: "2026-05-15",
+    location: "Bangalore Palace Grounds", mode: "In-Person",
+    desc: "International conference on embedded systems, RTOS, automotive software, microcontrollers, IoT edge hardware, and FPGA design.",
+    link: "https://www.embedded-world.de"
+  },
+  {
+    id: 104, title: "IoT India Congress 2026",
+    org: "IoT India", type: "conference",
+    areas: ["iot","cloud","ai"], geo: "bangalore",
+    date: "2026-08-27", endDate: "2026-08-28", cfpDeadline: null,
+    location: "ITC Gardenia, Residency Road, Bangalore", mode: "Hybrid",
+    desc: "India's top IoT event covering smart manufacturing, IIoT, edge-to-cloud, AIoT, connectivity standards, and digital infrastructure.",
+    link: "https://iotindiacongress.com"
+  },
+  {
+    id: 105, title: "Platform Engineering & DevOps India Summit 2026",
+    org: "DevOps Institute India", type: "conference",
+    areas: ["devops","cloud","ai"], geo: "bangalore",
+    date: "2026-07-24", endDate: "2026-07-25", cfpDeadline: "2026-06-10",
+    location: "Radisson Blu, Outer Ring Road, Bangalore", mode: "In-Person",
+    desc: "Internal developer portals, IaC, GitOps, SRE practices, AI-assisted DevOps pipelines, platform engineering at scale.",
+    link: "https://devopsinstitute.com"
+  },
+  {
+    id: 106, title: "Semiconductor & VLSI India Summit 2026",
+    org: "VLSI Society of India / NASSCOM", type: "conference",
+    areas: ["semi","ai","iot"], geo: "bangalore",
+    date: "2026-09-25", endDate: "2026-09-26", cfpDeadline: "2026-07-20",
+    location: "The Leela Palace, Bangalore", mode: "In-Person",
+    desc: "India semiconductor ecosystem summit — chip design, EDA tools, fab policy, AI chip architecture, SoC for automotive and IoT.",
+    link: "https://nasscom.in/semiconductors"
+  },
+  {
+    id: 107, title: "RoboIndia Summit 2026",
+    org: "IISc / iRobot India", type: "conference",
+    areas: ["robotics","ai","iot"], geo: "bangalore",
+    date: "2026-10-09", endDate: "2026-10-10", cfpDeadline: "2026-08-01",
+    location: "IISc Bangalore", mode: "In-Person",
+    desc: "Robotics, autonomous systems, manipulation, AI planning, ROS 2, SLAM, collaborative robotics for industry and research.",
+    link: "https://roboindia.org"
+  },
+  // ── REST OF INDIA ──────────────────────────────────────────
+  {
+    id: 108, title: "Black Hat India 2026",
+    org: "Black Hat / Informa Tech", type: "conference",
+    areas: ["security","ai"], geo: "india",
+    date: "2026-11-05", endDate: "2026-11-07", cfpDeadline: "2026-07-31",
+    location: "Bombay Exhibition Centre, Mumbai", mode: "In-Person",
+    desc: "Premier cybersecurity conference — AI-driven threats, zero-day research, hardware security, supply chain attacks, LLM red-teaming.",
+    link: "https://www.blackhat.com/asia-26"
+  },
+  {
+    id: 109, title: "Cloud Summit India 2026",
+    org: "Cloud India", type: "conference",
+    areas: ["cloud","devops","ai"], geo: "india",
+    date: "2026-10-15", endDate: "2026-10-16", cfpDeadline: "2026-08-10",
+    location: "Hyderabad International Convention Centre", mode: "In-Person",
+    desc: "Multi-cloud strategy, cloud cost optimization, FinOps, serverless, data sovereignty, cloud-native security and observability.",
+    link: "https://cloudsummitindia.com"
+  },
+  {
+    id: 110, title: "OWASP AppSec India 2026",
+    org: "OWASP Foundation", type: "conference",
+    areas: ["security","devops"], geo: "india",
+    date: "2026-09-04", endDate: "2026-09-05", cfpDeadline: "2026-07-01",
+    location: "Chennai Trade Centre", mode: "Hybrid",
+    desc: "Application security, OWASP Top 10, DevSecOps, API security, LLM security (OWASP LLM Top 10), container hardening.",
+    link: "https://owasp.org/www-committee-india/"
+  },
+  {
+    id: 111, title: "Data Science India Summit 2026",
+    org: "Analytics Vidhya / Springer", type: "conference",
+    areas: ["data","ai","cloud"], geo: "india",
+    date: "2026-11-14", endDate: "2026-11-15", cfpDeadline: "2026-09-01",
+    location: "HITEX Exhibition Centre, Hyderabad", mode: "In-Person",
+    desc: "Data engineering, ML pipelines, real-time analytics, vector databases, AI/ML model governance and MLOps.",
+    link: "https://www.analyticsvidhya.com"
+  },
+  {
+    id: 112, title: "IEEE IoT Congress India 2026",
+    org: "IEEE India Council", type: "conference",
+    areas: ["iot","semi","ai"], geo: "india",
+    date: "2026-12-10", endDate: "2026-12-12", cfpDeadline: "2026-09-15",
+    location: "College of Engineering Pune (COEP)", mode: "In-Person",
+    desc: "IEEE IoT architecture, edge intelligence, LPWAN, 5G-IoT, sensor fusion, industrial IoT security and standards.",
+    link: "https://ieee-iot.org"
+  },
+  // ── GLOBAL / OUTSIDE INDIA ─────────────────────────────────
+  {
+    id: 113, title: "AWS re:Invent 2026",
+    org: "Amazon Web Services", type: "conference",
+    areas: ["cloud","ai","devops"], geo: "global",
+    date: "2026-11-30", endDate: "2026-12-04", cfpDeadline: null,
+    location: "Las Vegas, USA", mode: "In-Person",
+    desc: "World's largest cloud computing conference — AWS services, serverless, data, AI/ML on cloud, edge computing, and generative AI.",
+    link: "https://reinvent.awsevents.com"
+  },
+  {
+    id: 114, title: "Google Cloud Next 2026",
+    org: "Google Cloud", type: "conference",
+    areas: ["cloud","ai","data"], geo: "global",
+    date: "2026-04-09", endDate: "2026-04-11", cfpDeadline: null,
+    location: "Las Vegas, USA", mode: "Hybrid",
+    desc: "Google Cloud AI, Gemini, BigQuery, Vertex AI, Kubernetes, multicloud, and enterprise digital transformation.",
+    link: "https://cloud.withgoogle.com/next"
+  },
+  {
+    id: 115, title: "DEF CON 34",
+    org: "DEF CON Communications", type: "conference",
+    areas: ["security"], geo: "global",
+    date: "2026-08-06", endDate: "2026-08-09", cfpDeadline: "2026-03-01",
+    location: "Las Vegas Convention Center, USA", mode: "In-Person",
+    desc: "World's largest hacker conference — hardware hacking, AI red teaming, CTF, social engineering, and cutting-edge security research.",
+    link: "https://defcon.org"
+  },
+  {
+    id: 116, title: "SC26 — SuperComputing 2026",
+    org: "IEEE / ACM", type: "conference",
+    areas: ["quantum","cloud","data"], geo: "global",
+    date: "2026-11-15", endDate: "2026-11-20", cfpDeadline: "2026-04-01",
+    location: "Dallas, TX, USA", mode: "In-Person",
+    desc: "High-performance computing, quantum-classical hybrid systems, AI for science, exascale systems, and scientific computing.",
+    link: "https://sc26.supercomputing.org"
+  },
+  {
+    id: 117, title: "IEEE Quantum Week 2026",
+    org: "IEEE", type: "conference",
+    areas: ["quantum","ai"], geo: "global",
+    date: "2026-09-13", endDate: "2026-09-18", cfpDeadline: "2026-04-15",
+    location: "Montreal, Canada", mode: "In-Person",
+    desc: "Quantum computing, quantum networking, quantum algorithms, error correction, quantum-AI intersection and software frameworks.",
+    link: "https://qce.quantum.ieee.org"
+  },
+  {
+    id: 118, title: "Arm TechCon 2026",
+    org: "Arm Ltd.", type: "conference",
+    areas: ["semi","robotics","iot","ai"], geo: "global",
+    date: "2026-10-27", endDate: "2026-10-29", cfpDeadline: "2026-07-15",
+    location: "San Jose Convention Center, USA", mode: "In-Person",
+    desc: "Arm ecosystem — CPU/GPU architecture, Cortex-M/A, NPU for edge AI, automotive safety, IoT security, and SystemReady.",
+    link: "https://armtechcon.com"
+  },
+  {
+    id: 119, title: "Open Source Summit Europe 2026",
+    org: "Linux Foundation", type: "conference",
+    areas: ["devops","cloud","ai"], geo: "global",
+    date: "2026-09-22", endDate: "2026-09-24", cfpDeadline: "2026-06-09",
+    location: "Vienna, Austria", mode: "In-Person",
+    desc: "Linux, open-source AI, SBOM, supply chain security, WASM, eBPF, Rust, open hardware and community governance.",
+    link: "https://events.linuxfoundation.org/open-source-summit-europe/"
+  },
+  {
+    id: 120, title: "ROS World 2026",
+    org: "Open Robotics", type: "talk",
+    areas: ["robotics","ai","iot"], geo: "global",
+    date: "2026-10-22", endDate: "2026-10-23", cfpDeadline: "2026-08-01",
+    location: "Online + Austin, TX, USA", mode: "Hybrid",
+    desc: "ROS 2 ecosystem, autonomous mobile robots, robot simulation, MoveIt, Nav2, safety-critical systems and AI planning.",
+    link: "https://rosworld.ros.org"
+  }
+];
+
+// ── Explore area tag helpers ──────────────────────────────────────────────────
+function areaTagExplore(area) {
+  const map = {
+    cloud:'tag-area-cloud', security:'tag-area-sec',
+    robotics:'tag-area-robot', quantum:'tag-area-quantum',
+    xr:'tag-area-xr', devops:'tag-area-devops',
+    semi:'tag-area-semi', iot:'tag-area-iot', data:'tag-area-data'
+  };
+  const label = {
+    cloud:'Cloud', security:'Security', robotics:'Robotics',
+    quantum:'Quantum', xr:'XR/AR/VR', devops:'DevOps',
+    semi:'Semiconductor', iot:'IoT', data:'Data Science'
+  };
+  return `<span class="tag ${map[area]||''}">${label[area]||area}</span>`;
+}
+
+// ── Explore tab render ────────────────────────────────────────────────────────
+function renderExplore() {
+  const future = EVENTS2.filter(ev => daysUntil(ev.date) >= -7);
+
+  // Stats
+  document.getElementById('exploreStatsRow').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${EVENTS2.length}</div><div class="stat-label">Total Explore Events</div></div>
+    <div class="stat-card"><div class="stat-num">${EVENTS2.filter(e=>e.geo==='bangalore').length}</div><div class="stat-label">Bangalore</div></div>
+    <div class="stat-card"><div class="stat-num">${EVENTS2.filter(e=>e.geo==='india').length}</div><div class="stat-label">India</div></div>
+    <div class="stat-card"><div class="stat-num">${EVENTS2.filter(e=>e.geo==='global').length}</div><div class="stat-label">Global</div></div>
+    <div class="stat-card"><div class="stat-num">${EVENTS2.filter(e=>e.cfpDeadline && daysUntil(e.cfpDeadline)>=0).length}</div><div class="stat-label">Open CFPs</div></div>
+    <div class="stat-card"><div class="stat-num">${future.filter(e=>daysUntil(e.date)<=30).length}</div><div class="stat-label">Next 30 Days</div></div>
+  `;
+
+  function buildE2Card(ev) {
+    const days = daysUntil(ev.date);
+    const cls = urgencyClass(days);
+    const cardClass = cls === 'urgent' ? 'urgent' : cls === 'nearing' ? 'nearing' : ev.type;
+    return `
+    <div class="event-card ${cardClass}" onclick="showExploreModal(${ev.id})">
+      <div class="card-badges">
+        ${typeTag(ev.type)} ${geoTag(ev.geo)} ${ev.areas.map(areaTagExplore).join('')}
+      </div>
+      <div class="card-title">${ev.title}</div>
+      <div class="card-org">${ev.org}</div>
+      <div class="card-meta">
+        <span>&#128197; ${formatDate(ev.date)}${ev.endDate && ev.endDate !== ev.date ? ' to ' + formatDate(ev.endDate) : ''}</span>
+        <span>&#128205; ${ev.location}</span>
+        <span>&#128187; ${ev.mode}</span>
+      </div>
+      <div class="card-desc">${ev.desc}</div>
+      <div class="card-footer">
+        ${daysBadge(days)}
+        <a class="card-link" href="${ev.link}" target="_blank" onclick="event.stopPropagation()">Learn More &#8599;</a>
+      </div>
+    </div>`;
+  }
+
+  const blr   = future.filter(e => e.geo === 'bangalore');
+  const india = future.filter(e => e.geo === 'india');
+  const glob  = future.filter(e => e.geo === 'global');
+
+  document.getElementById('exploreBlrCount').textContent = blr.length;
+  document.getElementById('exploreIndiaCount').textContent = india.length;
+  document.getElementById('exploreGlobalCount').textContent = glob.length;
+
+  document.getElementById('exploreBlrGrid').innerHTML = blr.length
+    ? blr.map(buildE2Card).join('')
+    : '<p style="color:rgba(255,255,255,0.5);padding:12px">No events.</p>';
+  document.getElementById('exploreIndiaGrid').innerHTML = india.length
+    ? india.map(buildE2Card).join('')
+    : '<p style="color:rgba(255,255,255,0.5);padding:12px">No events.</p>';
+  document.getElementById('exploreGlobalGrid').innerHTML = glob.length
+    ? glob.map(buildE2Card).join('')
+    : '<p style="color:rgba(255,255,255,0.5);padding:12px">No events.</p>';
+}
+
+function showExploreModal(id) {
+  const ev = EVENTS2.find(e => e.id === id);
+  if (!ev) return;
+  const days = daysUntil(ev.date);
+  document.getElementById('modalBody').innerHTML = `
+    <h2>${ev.title}</h2>
+    <div style="margin:8px 0">${typeTag(ev.type)} ${geoTag(ev.geo)} ${ev.areas.map(areaTagExplore).join('')}</div>
+    <p style="color:#555;font-size:0.88rem;margin:10px 0">${ev.desc}</p>
+    <table style="width:100%;font-size:0.83rem;margin:10px 0;border-collapse:collapse">
+      <tr><td style="padding:5px;color:#888;width:120px">Organizer</td><td><strong>${ev.org}</strong></td></tr>
+      <tr><td style="padding:5px;color:#888">Date</td><td>${formatDate(ev.date)}${ev.endDate && ev.endDate !== ev.date ? ' to ' + formatDate(ev.endDate) : ''}</td></tr>
+      <tr><td style="padding:5px;color:#888">Location</td><td>${ev.location}</td></tr>
+      <tr><td style="padding:5px;color:#888">Mode</td><td>${ev.mode}</td></tr>
+      ${ev.cfpDeadline ? `<tr><td style="padding:5px;color:#888">CFP Deadline</td><td style="color:${daysUntil(ev.cfpDeadline)<0?'#999':'#f57f17'};font-weight:700">${formatDate(ev.cfpDeadline)} (${daysUntil(ev.cfpDeadline)<0?'Closed':daysUntil(ev.cfpDeadline)+'d left'})</td></tr>` : ''}
+      <tr><td style="padding:5px;color:#888">Days Until</td><td>${daysBadge(days)}</td></tr>
+    </table>
+    <a href="${ev.link}" target="_blank" style="display:inline-block;background:var(--intel-blue);color:white;padding:9px 20px;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.85rem">Visit Website &#8599;</a>
+  `;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+// ── TAB SWITCHING ─────────────────────────────────────────────────────────────
+let exploreInitialized = false;
+
+function switchTab(tab) {
+  const isCore = tab === 'core';
+  document.getElementById('coreContent').style.display = isCore ? '' : 'none';
+  document.getElementById('exploreContent').style.display = isCore ? 'none' : '';
+  document.getElementById('tabCore').classList.toggle('active', isCore);
+  document.getElementById('tabExplore').classList.toggle('active', !isCore);
+  if (!isCore && !exploreInitialized) {
+    exploreInitialized = true;
+    renderExplore();
+    fetchExploreNews();
+  }
+}
+
+// ── EXPLORE LIVE NEWS ─────────────────────────────────────────────────────────
+const EXPLORE_NEWS_CACHE_KEY = 'techDashExploreNewsCache';
+let allExploreNews = [];
+
+const EXPLORE_FEED_QUERIES = [
+  { q: 'Kubernetes+cloud+native+conference+India+2026',       area: 'Cloud',        cls: 'cloud' },
+  { q: 'cybersecurity+infosec+hacking+conference+India+2026', area: 'Security',     cls: 'security' },
+  { q: 'robotics+autonomous+systems+conference+India+2026',   area: 'Robotics',     cls: 'robotics' },
+  { q: 'quantum+computing+conference+summit+2026',            area: 'Quantum',      cls: 'quantum' },
+  { q: 'AR+VR+XR+augmented+reality+conference+India+2026',   area: 'XR',           cls: 'xr' },
+  { q: 'DevOps+platform+engineering+SRE+conference+2026',     area: 'DevOps',       cls: 'devops' },
+  { q: 'semiconductor+chip+design+VLSI+India+2026',           area: 'Semiconductor',cls: 'semi' },
+  { q: 'IoT+internet+of+things+edge+conference+India+2026',   area: 'IoT',          cls: 'iot' },
+  { q: 'data+science+analytics+conference+India+2026',        area: 'Data',         cls: 'data' }
+];
+
+async function fetchExploreNews() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(EXPLORE_NEWS_CACHE_KEY) || 'null');
+    if (cached && (Date.now() - cached.ts) < NEWS_CACHE_TTL) {
+      allExploreNews = cached.items;
+      renderExploreNewsGrid(allExploreNews);
+      setExploreFeedStatus('ok', cached.items.length, true, new Date(cached.ts));
+      return;
+    }
+  } catch {}
+
+  setExploreFeedStatus('loading', 0, false, null);
+  const seen = new Set();
+  const results = [];
+
+  for (const feed of EXPLORE_FEED_QUERIES) {
+    try {
+      const items = await fetchNewsForQuery(feed);
+      items.forEach(i => { if (!seen.has(i.link)) { seen.add(i.link); results.push(i); } });
+    } catch {}
+    await new Promise(r => setTimeout(r, 200));
+  }
+
+  if (results.length > 0) {
+    allExploreNews = results;
+    try { localStorage.setItem(EXPLORE_NEWS_CACHE_KEY, JSON.stringify({ ts: Date.now(), items: results })); } catch {}
+    renderExploreNewsGrid(results);
+    setExploreFeedStatus('ok', results.length, false, new Date());
+  } else {
+    setExploreFeedStatus('error', 0, false, null);
+    document.getElementById('exploreNewsGrid').innerHTML =
+      '<div style="color:rgba(255,255,255,0.55);padding:16px;font-size:0.85rem;grid-column:1/-1">&#9888; Live feed unavailable. Check network/firewall.</div>';
+    document.getElementById('exploreNewsCount').textContent = 'Unavailable';
+  }
+}
+
+function filterExploreNews(area, btn) {
+  document.querySelectorAll('#exploreNewsTabs .news-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const filtered = area === 'all' ? allExploreNews : allExploreNews.filter(n => n.area === area);
+  renderExploreNewsGrid(filtered);
+}
+
+function renderExploreNewsGrid(items) {
+  const grid = document.getElementById('exploreNewsGrid');
+  document.getElementById('exploreNewsCount').textContent = (items && items.length ? items.length : 0) + ' stories';
+  if (!items || !items.length) {
+    grid.innerHTML = '<div style="color:rgba(255,255,255,0.5);padding:12px;grid-column:1/-1">No stories for this filter.</div>';
+    return;
+  }
+  grid.innerHTML = items.map(n => `
+    <a class="news-card ${n.cls||''}" href="${n.link}" target="_blank" rel="noopener noreferrer">
+      <div class="news-title">${n.title}</div>
+      <div class="news-meta">
+        <span class="news-source">${n.source}</span>
+        ${n.date ? `<span class="news-date">&#128197; ${n.date}</span>` : ''}
+        <span class="news-area-tag ${n.cls||''}">${n.area}</span>
+      </div>
+    </a>`).join('');
+  const tickerItems = items.slice(0, 10).map(n => `<span>&#128309; ${n.title}</span>`);
+  document.getElementById('exploreTickerScroll').innerHTML = [...tickerItems, ...tickerItems].join('<span style="opacity:0.25;margin:0 24px">|</span>');
+  document.getElementById('exploreTickerBar').classList.add('show');
+}
+
+function setExploreFeedStatus(state, count, cached, date) {
+  const dot = document.getElementById('exploreFeedDot');
+  const status = document.getElementById('exploreFeedStatus');
+  dot.className = 'feed-dot';
+  if (state === 'loading') { dot.classList.add('loading'); status.textContent = 'Fetching...'; }
+  else if (state === 'ok') { status.textContent = count + ' stories' + (cached ? ' (cached)' : ''); }
+  else { dot.classList.add('error'); status.textContent = 'Unavailable'; }
+}
+
+// ============================================================
+// AUTO REFRESH every Monday check + initial render
+// ============================================================
+window.onload = () => {
+  render();
+  const now = new Date();
+  document.getElementById('lastUpdated').textContent =
+    'Updated: ' + now.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) + ' ' +
+    now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+  fetchAllNews();
+  checkMondayRefresh();
+  // Check every hour if Monday has arrived (triggers news re-fetch on Mondays)
+  setInterval(() => { checkMondayRefresh(); }, 60 * 60 * 1000);
+};
+</script>
+</body>
+</html>
