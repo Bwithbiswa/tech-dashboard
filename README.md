@@ -81,10 +81,46 @@ All changes persist in the browser and do not affect what other users see.
 
 ---
 
+## Auto-Update — How Events Stay Fresh Without Any Manual Work
+
+A **GitHub Actions workflow** runs automatically every Monday at 6:00 AM IST. It:
+
+1. Queries **WikiCFP** (a global call-for-papers database) across 15 technical areas using targeted RSS feeds
+2. Parses each result to extract event name, date, location, and submission deadline
+3. Filters out past events — only future events are kept
+4. Injects the fetched events directly into `index.html` between special markers
+5. Commits and pushes the updated file back to this repo
+6. GitHub Pages automatically deploys the new version within ~1 minute
+
+This means the dashboard updates itself every week — no one needs to touch the code or file manually.
+
+The workflow can also be triggered manually at any time from the [Actions tab](../../actions).
+
+---
+
+## How It Fetches Live Data
+
+Because browsers block direct cross-origin requests, the dashboard uses a **CORS proxy fallback chain** to fetch news on page load:
+
+1. Tries a direct fetch to Google News RSS (`news.google.com/rss/search?q=...`)
+2. If blocked, falls back to `api.allorigins.win` as a CORS proxy
+3. If that fails, falls back to `corsproxy.io`
+
+WikiCFP RSS is similarly fetched for paper submission deadlines (CFP = Call For Papers).
+
+Each fetch returns XML which is parsed in-browser using `DOMParser`, extracting title, link, source, and date from each RSS item.
+
+---
+
 ## File Structure in This Repo
 
-`
+```
 tech-dashboard/
-├── index.html      # The complete dashboard (single self-contained file)
-└── README.md       # This file
-`
+├── index.html                          # The complete dashboard (single self-contained file)
+├── scripts/
+│   └── fetch_events.py                 # Python script: fetches WikiCFP events, updates index.html
+├── .github/
+│   └── workflows/
+│       └── update-events.yml           # GitHub Actions: runs fetch_events.py every Monday 6 AM IST
+└── README.md                           # This file
+```
