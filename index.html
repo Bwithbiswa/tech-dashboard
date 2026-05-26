@@ -1469,7 +1469,7 @@ function getDeleted() {
 function getAllEvents() {
   const deleted = getDeleted();
   const base = EVENTS.filter(e => !deleted.includes(e.id));
-  return [...base, ...getCustomEvents()];
+  return [...base, ...AUTO_EVENTS.filter(e => !deleted.includes(e.id)), ...getCustomEvents()];
 }
 
 function deleteEvent(id) {
@@ -2013,6 +2013,11 @@ const EVENTS2 = [
     link: "https://rosworld.ros.org"
   }
 ];
+
+// === AUTO_EVENTS_START ===
+// Auto-fetched events from WikiCFP (updated weekly by GitHub Actions)
+const AUTO_EVENTS = [];
+// === AUTO_EVENTS_END ===
 
 // ── Explore area tag helpers ──────────────────────────────────────────────────
 function areaTagExplore(area) {
