@@ -1194,9 +1194,11 @@ const EVENTS = [
 // HELPERS
 // ============================================================
 function daysUntil(dateStr) {
-  const d = new Date(dateStr);
-  const diff = Math.ceil((d - TODAY) / (1000*60*60*24));
-  return diff;
+  // Always recompute today so date-based filtering stays accurate even if the
+  // page is left open overnight or across a Monday boundary.
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const d = new Date(dateStr); d.setHours(0, 0, 0, 0);
+  return Math.round((d - today) / (1000 * 60 * 60 * 24));
 }
 
 function formatDate(dateStr) {
@@ -1288,7 +1290,11 @@ function getFiltered() {
 // ============================================================
 function render() {
   const filtered = getFiltered();
-  const future = filtered.filter(ev => daysUntil(ev.date) >= 0);
+  // Sort ascending by event date so the nearest events always appear first
+  // (today → tomorrow → next week → …)
+  const future = filtered
+    .filter(ev => daysUntil(ev.date) >= 0)
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
 
   // Stats
   document.getElementById('statsRow').innerHTML = `
@@ -1333,8 +1339,10 @@ function render() {
     ? global.map(buildCard).join('')
     : '<p style="color:rgba(255,255,255,0.5);padding:12px">No global events with current filters.</p>';
 
-  // Paper table — only open (future) CFP deadlines
-  const paperRows = filtered.filter(e => e.cfpDeadline && daysUntil(e.cfpDeadline) >= 0);
+  // Paper table — only open (future) CFP deadlines, sorted nearest deadline first
+  const paperRows = filtered
+    .filter(e => e.cfpDeadline && daysUntil(e.cfpDeadline) >= 0)
+    .sort((a, b) => new Date(a.cfpDeadline) - new Date(b.cfpDeadline));
   document.getElementById('paperBody').innerHTML = paperRows.map(ev => {
     const d = ev.cfpDeadline ? daysUntil(ev.cfpDeadline) : null;
     const cls = d !== null ? (d < 0 ? '#999' : d <= 7 ? '#c62828' : d <= 14 ? '#f57f17' : '#1565c0') : '#999';
@@ -2181,7 +2189,10 @@ function areaTagExplore(area) {
 
 // ── Explore tab render ────────────────────────────────────────────────────────
 function renderExplore() {
-  const future = EVENTS2.filter(ev => daysUntil(ev.date) >= 0);
+  // Sort ascending by date — nearest events first
+  const future = EVENTS2
+    .filter(ev => daysUntil(ev.date) >= 0)
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
 
   // Stats
   document.getElementById('exploreStatsRow').innerHTML = `
