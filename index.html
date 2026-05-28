@@ -446,6 +446,8 @@
     <div class="live-badge"><span class="live-dot"></span>LIVE</div>
     <div class="last-updated" id="lastUpdated"></div>
     <span id="liveEventsBadge" style="font-size:0.72rem;font-weight:600;color:#4caf50;white-space:nowrap"></span>
+    <button class="action-btn locked" id="editBtn" onclick="toggleEditMode()">&#128274; Edit Mode</button>
+    <button class="action-btn" onclick="openShareModal()">&#128279; Share</button>
     <button class="refresh-btn" onclick="refreshDashboard()">&#8635; Refresh</button>
   </div>
 </div>
@@ -453,8 +455,9 @@
 <!-- EDIT MODE BAR -->
 <div class="edit-mode-bar" id="editModeBar">
   <span class="edit-mode-badge">&#9998; EDIT MODE ON</span>
-  <span>You can add or delete events. Changes persist in this browser.</span>
-  <span style="margin-left:auto;cursor:pointer;opacity:0.7" onclick="toggleEditMode()">&#10006; Exit Edit Mode</span>
+  <span style="flex:1">Add or delete events. Click <strong>Push to GitHub</strong> to save permanently for everyone.</span>
+  <button onclick="openGHSync()" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.6);color:white;border-radius:8px;padding:5px 14px;cursor:pointer;font-weight:700;font-size:0.8rem;white-space:nowrap">&#11014; Push to GitHub</button>
+  <span style="cursor:pointer;opacity:0.7;margin-left:12px;white-space:nowrap" onclick="toggleEditMode()">&#10006; Exit Edit Mode</span>
 </div>
 
 <!-- ALERTS BAR -->
@@ -665,6 +668,27 @@
     <div style="background:#e8f5e9;border-radius:10px;padding:12px;margin:12px 0;font-size:0.82rem;color:#2e7d32">
       <strong>&#9989; No backend, no login.</strong> Pure HTML + JavaScript &mdash; works offline for curated events, fetches live data when online.
     </div>
+  </div>
+</div>
+
+<!-- GITHUB SYNC MODAL -->
+<div class="modal-overlay" id="ghSyncOverlay" onclick="closeGHModal(event)">
+  <div class="modal" style="max-width:490px">
+    <button class="modal-close" onclick="closeGHModal()">&times;</button>
+    <h2 style="color:var(--intel-blue)">&#11014; Push Changes to GitHub</h2>
+    <p style="margin:10px 0 14px;font-size:0.85rem;color:#555">Your edits will be saved to the GitHub repo. The live dashboard at <a href="https://bwithbiswa.github.io/tech-dashboard/" target="_blank" style="color:#0068b5">bwithbiswa.github.io/tech-dashboard</a> updates for everyone within ~60 seconds.</p>
+    <div id="ghSyncSummary" style="background:#f0f7ff;border-radius:8px;padding:12px;margin:0 0 14px;font-size:0.83rem;color:#1565c0"></div>
+    <div class="form-group">
+      <label style="font-weight:600">GitHub Personal Access Token
+        <a href="https://github.com/settings/tokens/new?scopes=repo&description=tech-dashboard" target="_blank" style="font-size:0.75rem;font-weight:400;color:#0068b5;margin-left:8px">&#8599; Create token (repo scope)</a>
+      </label>
+      <input id="ghTokenInput" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style="width:100%;margin-top:6px;padding:9px 12px;border:1px solid #ccc;border-radius:6px;font-size:0.9rem;font-family:monospace">
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:0.82rem;margin:10px 0 16px;cursor:pointer">
+      <input type="checkbox" id="ghSaveToken" checked> Remember token in this browser only (never leaves your device except to GitHub)
+    </label>
+    <button class="btn-primary" onclick="confirmGHSync()">&#11014; Push to GitHub &mdash; Save for Everyone</button>
+    <p style="font-size:0.73rem;color:#aaa;margin-top:10px">Token is stored in browser localStorage only. Sent exclusively to <code>api.github.com</code> &mdash; no third-party servers involved.</p>
   </div>
 </div>
 
@@ -2320,6 +2344,118 @@ function setExploreFeedStatus(state, count, cached, date) {
   if (state === 'loading') { dot.classList.add('loading'); status.textContent = 'Fetching...'; }
   else if (state === 'ok') { status.textContent = count + ' stories' + (cached ? ' (cached)' : ''); }
   else { dot.classList.add('error'); status.textContent = 'Unavailable'; }
+}
+
+// ============================================================
+// GITHUB API SYNC — push custom events + deletions to repo
+// ============================================================
+const GH_OWNER    = 'Bwithbiswa';
+const GH_REPO     = 'tech-dashboard';
+const GH_FILE     = 'index.html';
+const GH_BRANCH   = 'master';
+const GH_TOKEN_KEY = 'techDashGHToken';
+
+function openGHSync() {
+  const custom  = getCustomEvents();
+  const deleted = getDeleted();
+  document.getElementById('ghSyncSummary').innerHTML =
+    `<strong>Changes ready to push:</strong><br>
+    &#10133; <strong>${custom.length}</strong> custom event(s) to add permanently<br>
+    &#10060; <strong>${deleted.length}</strong> event(s) marked for removal<br>
+    <small style="color:#555;margin-top:6px;display:block">These will be written to the GitHub repo and deployed to the live URL.</small>`;
+  document.getElementById('ghTokenInput').value = localStorage.getItem(GH_TOKEN_KEY) || '';
+  document.getElementById('ghSyncOverlay').classList.add('show');
+}
+
+function closeGHModal(e) {
+  if (!e || e.target === document.getElementById('ghSyncOverlay'))
+    document.getElementById('ghSyncOverlay').classList.remove('show');
+}
+
+async function confirmGHSync() {
+  const token = document.getElementById('ghTokenInput').value.trim();
+  if (!token) { alert('Please enter your GitHub Personal Access Token.'); return; }
+  if (document.getElementById('ghSaveToken').checked) {
+    localStorage.setItem(GH_TOKEN_KEY, token);
+  }
+  closeGHModal();
+  await doGHPush(token);
+}
+
+async function doGHPush(token) {
+  showToast('Connecting to GitHub\u2026', 15000);
+  const hdrs = {
+    'Authorization': 'token ' + token,
+    'Accept': 'application/vnd.github.v3+json',
+    'Content-Type': 'application/json'
+  };
+  try {
+    // 1. Fetch current file SHA + content
+    const metaRes = await fetch(
+      `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}?ref=${GH_BRANCH}`,
+      { headers: hdrs }
+    );
+    if (!metaRes.ok) {
+      const err = await metaRes.json().catch(() => ({}));
+      throw new Error((err.message || 'Fetch failed') + ' \u2014 check token has repo scope');
+    }
+    const meta = await metaRes.json();
+    const sha  = meta.sha;
+
+    // 2. Decode file bytes (handles Unicode correctly)
+    const raw = meta.content.replace(/\n/g, '');
+    const bytes = Uint8Array.from(atob(raw), c => c.charCodeAt(0));
+    let html = new TextDecoder('utf-8').decode(bytes);
+
+    // 3. Build merged AUTO_EVENTS: existing + custom, minus deleted
+    const custom  = getCustomEvents();
+    const deleted = getDeleted();
+    const merged  = [
+      ...AUTO_EVENTS.filter(e => !deleted.includes(e.id)),
+      ...custom.map(e => ({ ...e, _synced: true }))
+    ];
+    const dateStr = new Date().toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+    const S = '// === AUTO_EVENTS_START ===';
+    const E = '// === AUTO_EVENTS_END ===';
+    const block = `${S}\n// Synced ${dateStr} via dashboard Edit Mode\nconst AUTO_EVENTS = ${JSON.stringify(merged, null, 2)};\n${E}`;
+    const re = new RegExp(
+      S.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[\\s\\S]*?' + E.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    );
+    html = html.replace(re, block);
+
+    // 4. Encode as base64 for GitHub API (UTF-8 safe)
+    const encoded = btoa(String.fromCharCode(...new TextEncoder().encode(html)));
+
+    // 5. PUT updated file to GitHub
+    const pushRes = await fetch(
+      `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`,
+      {
+        method: 'PUT',
+        headers: hdrs,
+        body: JSON.stringify({
+          message: `Dashboard sync: +${custom.length} events, -${deleted.length} deleted [${dateStr}]`,
+          content: encoded,
+          sha,
+          branch: GH_BRANCH
+        })
+      }
+    );
+    if (!pushRes.ok) {
+      const err = await pushRes.json().catch(() => ({}));
+      throw new Error(err.message || 'Push failed');
+    }
+
+    // 6. Clear local state — now permanently in repo
+    localStorage.removeItem(LS_KEY);
+    localStorage.removeItem(LS_DEL_KEY);
+    LIVE_EVENTS = [];
+    render();
+    showToast('\u2705 Pushed! Live dashboard updates in ~60 seconds.', 8000);
+
+  } catch (err) {
+    console.error('GH push error:', err);
+    showToast('\u274C Push failed: ' + err.message, 10000);
+  }
 }
 
 // ============================================================
