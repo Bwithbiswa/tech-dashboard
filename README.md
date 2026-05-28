@@ -77,7 +77,9 @@ A **Paper Submissions table** separately tracks CFP deadlines with the same colo
 
 ## Edit Mode
 
-PIN-protected Edit Mode (`intel2026`) lets you add or delete events. Changes are stored in the browser's `localStorage` and do not affect other users.
+PIN-protected Edit Mode lets you add, edit, or delete events. Use the **Push to GitHub** button (visible in Edit Mode) to save changes permanently to the repo — they go live for everyone in ~60 seconds.
+
+The Edit Mode PIN is stored separately and shared privately with authorised team members. Do not share it publicly.
 
 ---
 

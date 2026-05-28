@@ -1,0 +1,4 @@
+# Never push credentials or local config to GitHub
+CREDENTIALS.txt
+*.secret
+*.key
