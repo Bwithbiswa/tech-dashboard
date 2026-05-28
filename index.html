@@ -206,6 +206,7 @@
     font-size: 0.78rem; color: #555; margin-bottom: 8px;
   }
   .card-meta span { display: flex; align-items: center; gap: 4px; }
+  .detail-label { font-size: 0.7rem; font-weight: 700; color: var(--intel-light-blue); text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px; }
   .card-desc { font-size: 0.8rem; color: #444; line-height: 1.5; margin-bottom: 10px; }
   .card-footer { display: flex; align-items: center; justify-content: space-between; }
   .days-badge {
@@ -456,9 +457,6 @@
 </div>
 
 <!-- ALERTS BAR -->
-<div class="alerts-bar" id="alertsBar">
-  <!-- alerts injected by JS -->
-</div>
 
 <div class="main">
   <!-- FILTERS -->
@@ -1229,7 +1227,7 @@ function buildCard(ev) {
       <span>&#128205; ${ev.location}</span>
       <span>&#128187; ${ev.mode}</span>
     </div>
-    <div class="card-desc">${ev.desc}</div>
+    <div class="card-desc"><span class="detail-label">Event Details:</span> ${ev.desc}</div>
     <div class="card-footer">
       ${daysBadge(days)}
       <a class="card-link" href="${ev.link}" target="_blank" onclick="event.stopPropagation()">Learn More &#8599;</a>
@@ -1326,8 +1324,6 @@ function render() {
     </tr>`;
   }).join('');
 
-  // Alerts bar
-  buildAlerts(future);
 }
 
 function buildAlerts(future) {
@@ -2012,6 +2008,98 @@ const EVENTS2 = [
     desc: "ROS 2 ecosystem, autonomous mobile robots, robot simulation, MoveIt, Nav2, safety-critical systems and AI planning.",
     link: "https://rosworld.ros.org"
   }
+
+  // ── ADDITIONAL GLOBAL TECHNICAL FORUMS ────────────────────────────────────
+  {
+    id: 121, title: "Computex 2027",
+    org: "TAITRA / Taiwan External Trade Development Council", type: "conference",
+    areas: ["semi","ai","iot"], geo: "global",
+    date: "2027-05-25", endDate: "2027-05-29", cfpDeadline: null,
+    location: "Taipei Nangang Exhibition Center, Taiwan", mode: "In-Person",
+    desc: "World's largest computer hardware and electronics show covering AI PCs, next-gen GPUs, ARM chips, server platforms, and edge computing innovations.",
+    link: "https://www.computextaipei.com.tw"
+  },
+  {
+    id: 122, title: "Hot Chips 38 (2026)",
+    org: "IEEE / ACM SIGARCH", type: "conference",
+    areas: ["semi","ai"], geo: "global",
+    date: "2026-08-23", endDate: "2026-08-25", cfpDeadline: "2026-04-30",
+    location: "Stanford University, California, USA", mode: "In-Person",
+    desc: "IEEE symposium on high-performance chips covering AI accelerators, custom silicon, CPU/GPU microarchitecture, and emerging processor designs.",
+    link: "https://hotchips.org"
+  },
+  {
+    id: 123, title: "ISSCC 2027 — IEEE Intl Solid-State Circuits Conference",
+    org: "IEEE Solid-State Circuits Society", type: "conference",
+    areas: ["semi","ai"], geo: "global",
+    date: "2027-02-15", endDate: "2027-02-19", cfpDeadline: "2026-09-15",
+    location: "San Francisco, California, USA", mode: "In-Person",
+    desc: "Premier global forum for solid-state circuits and chip design covering memory, analog, RF, processors, and energy-efficient silicon innovations.",
+    link: "https://isscc.org"
+  },
+  {
+    id: 124, title: "MWC Barcelona 2027 — Mobile World Congress",
+    org: "GSMA", type: "conference",
+    areas: ["iot","cloud","xr"], geo: "global",
+    date: "2027-02-22", endDate: "2027-02-25", cfpDeadline: null,
+    location: "Fira Gran Via, Barcelona, Spain", mode: "In-Person",
+    desc: "World's largest mobile and connectivity event covering 5G/6G, edge AI, private networks, IoT platforms, and XR-enabled mobile devices.",
+    link: "https://www.mwcbarcelona.com"
+  },
+  {
+    id: 125, title: "CES 2027 — Consumer Electronics Show",
+    org: "Consumer Technology Association (CTA)", type: "conference",
+    areas: ["xr","ai","iot"], geo: "global",
+    date: "2027-01-06", endDate: "2027-01-09", cfpDeadline: null,
+    location: "Las Vegas Convention Center, Nevada, USA", mode: "In-Person",
+    desc: "World's most influential tech event covering AI hardware, robotics, smart displays, AR/VR headsets, automotive tech, and next-gen consumer devices.",
+    link: "https://www.ces.tech"
+  },
+  {
+    id: 126, title: "IEEE DAC 2026 — Design Automation Conference",
+    org: "IEEE / ACM", type: "conference",
+    areas: ["semi","ai"], geo: "global",
+    date: "2026-06-22", endDate: "2026-06-26", cfpDeadline: null,
+    location: "San Francisco, California, USA", mode: "In-Person",
+    desc: "Top EDA and chip design conference covering AI chip design flows, formal verification, physical design, VLSI CAD tools, and hardware security.",
+    link: "https://dac.com"
+  },
+  {
+    id: 127, title: "Flash Memory Summit 2026",
+    org: "FMS / Connexion Events", type: "conference",
+    areas: ["semi","cloud"], geo: "global",
+    date: "2026-08-04", endDate: "2026-08-07", cfpDeadline: "2026-04-15",
+    location: "Santa Clara Convention Center, California, USA", mode: "In-Person",
+    desc: "World's largest storage technology conference covering NAND flash, NVMe, CXL memory, persistent storage, and data center storage architecture.",
+    link: "https://www.flashmemorysummit.com"
+  },
+  {
+    id: 128, title: "USENIX OSDI 2026 — OS Design & Implementation",
+    org: "USENIX Association", type: "conference",
+    areas: ["cloud","security"], geo: "global",
+    date: "2026-11-04", endDate: "2026-11-06", cfpDeadline: "2026-05-07",
+    location: "San Diego, California, USA", mode: "In-Person",
+    desc: "Top systems research conference covering OS kernels, distributed systems, storage, networking, and AI infrastructure at scale.",
+    link: "https://www.usenix.org/conference/osdi26"
+  },
+  {
+    id: 129, title: "IEEE HPCA 2027 — High Performance Computer Architecture",
+    org: "IEEE Computer Society", type: "conference",
+    areas: ["semi","ai","cloud"], geo: "global",
+    date: "2027-03-01", endDate: "2027-03-05", cfpDeadline: "2026-08-14",
+    location: "Austin, Texas, USA", mode: "In-Person",
+    desc: "Premier IEEE conference on computer architecture covering memory systems, accelerators, CPU/GPU design, and AI hardware performance.",
+    link: "https://hpca-conf.org"
+  },
+  {
+    id: 130, title: "OCP Global Summit 2026 — Open Compute Project",
+    org: "Open Compute Project Foundation", type: "conference",
+    areas: ["cloud","semi","ai"], geo: "global",
+    date: "2026-10-14", endDate: "2026-10-16", cfpDeadline: "2026-07-31",
+    location: "San Jose Convention Center, California, USA", mode: "In-Person",
+    desc: "Open hardware ecosystem summit covering AI server racks, data center cooling, open silicon, CXL interconnects, and disaggregated computing.",
+    link: "https://www.opencompute.org"
+  },
 ];
 
 // === AUTO_EVENTS_START ===
@@ -2065,7 +2153,7 @@ function renderExplore() {
         <span>&#128205; ${ev.location}</span>
         <span>&#128187; ${ev.mode}</span>
       </div>
-      <div class="card-desc">${ev.desc}</div>
+      <div class="card-desc"><span class="detail-label">Event Details:</span> ${ev.desc}</div>
       <div class="card-footer">
         ${daysBadge(days)}
         <a class="card-link" href="${ev.link}" target="_blank" onclick="event.stopPropagation()">Learn More &#8599;</a>
