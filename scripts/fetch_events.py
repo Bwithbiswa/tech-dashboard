@@ -191,7 +191,16 @@ html = re.sub(
     flags=re.DOTALL
 )
 
+# Update "Last refreshed" date so the static HTML reflects when data was fetched
+today = date.today()
+today_str = f'{today.day} {today.strftime("%b")} {today.year}'  # e.g. "29 May 2026"
+html = re.sub(
+    r'Last refreshed: \d{1,2} \w+ \d{4}',
+    f'Last refreshed: {today_str}',
+    html
+)
+
 with open('index.html', 'w', encoding='utf-8', newline='\n') as f:
     f.write(html)
 
-print(f'index.html updated with {len(events)} auto events.')
+print(f'index.html updated with {len(events)} auto events (Last refreshed: {today_str}).')

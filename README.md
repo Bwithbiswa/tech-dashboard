@@ -1,5 +1,13 @@
 # Intel Tech Events Intelligence Dashboard
 
+## Open Dashboard
+
+### [Click here to open the Live Dashboard](https://bwithbiswa.github.io/tech-dashboard/)
+
+> Opens directly in your browser — no download, no login required.
+
+---
+
 **Manager:** Chennagiri Sheshashai, Sowmya
 **Team:** EPS COES GFX SRIOV Team
 
