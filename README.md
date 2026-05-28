@@ -1,10 +1,11 @@
-# Intel Tech Events Intelligence Dashboard
+﻿# Intel Tech Events Intelligence Dashboard
 
 ## Open Dashboard
 
 ### [Click here to open the Live Dashboard](https://bwithbiswa.github.io/tech-dashboard/)
 
-> Opens directly in your browser — no download, no login required.
+> Opens directly in any browser — no download, no login required.
+> Share this URL with your team or manager.
 
 ---
 
@@ -15,120 +16,94 @@
 
 ## What This Dashboard Does
 
-This is a fully self-contained HTML dashboard that automatically tracks and displays technical conferences, paper submission deadlines, learning events, and technical talks relevant to the team. It covers two broad areas:
+A self-contained HTML dashboard that automatically tracks and displays technical conferences, paper submission deadlines, learning events, and talks relevant to the team. Covers two broad areas:
 
-- **Core Tech Areas** - Virtualization, Graphics, AI, GenAI, AI Automation, Validation Automation, Display
-- **Explore More Areas** - Cloud Computing, Cybersecurity, Robotics, Quantum, XR/AR/VR, DevOps, Semiconductor, IoT, Data Science
+- **Core Tech Areas** — Virtualization, Graphics, AI, GenAI, AI Automation, Validation Automation, Display
+- **Explore More Areas** — Cloud Computing, Cybersecurity, Robotics, Quantum, XR/AR/VR, DevOps, Semiconductor, IoT, Data Science
 
-Events are organized into three geographic sections: **Bangalore/Nearby**, **India (Rest)**, and **Outside India (Global)**.
+Events are organized into three geographic sections: **Bangalore/Nearby**, **India (Rest)**, and **Global/Outside India**.
 
 ---
 
 ## How It Is Built
 
-The dashboard is a single HTML file with no backend server or database. Everything runs inside the browser using JavaScript. It combines:
+A single HTML file with no backend server or database. Everything runs in the browser using JavaScript:
 
-1. **Curated Event Data** - 50 hand-picked events (30 core + 20 explore) stored directly in the file as structured JavaScript objects, each with name, date, location, area, and link.
-2. **Live News Feed** - On every page load, it fetches fresh articles from Google News RSS feeds and WikiCFP (call-for-papers site) using 19 targeted search queries across all technical areas.
-3. **Intel Theme** - Styled with Intel brand colors (blue #0068b5, dark navy, light blue) for a professional look suitable for manager sharing.
-
----
-
-## How It Fetches Live Data
-
-Because browsers block direct cross-origin requests, the dashboard uses a **CORS proxy fallback chain** to fetch news:
-
-1. Tries a direct fetch to Google News RSS (
-ews.google.com/rss/search?q=...)
-2. If blocked, falls back to pi.allorigins.win as a CORS proxy
-3. If that fails, falls back to corsproxy.io
-
-WikiCFP RSS is similarly fetched for paper submission deadlines (CFP = Call For Papers).
-
-Each fetch returns XML which is parsed in-browser using DOMParser, extracting title, link, source, and date from each RSS item.
+1. **Curated Event Data** — 60+ hand-picked events (name, date, location, area, link) as a reliable baseline.
+2. **Live Event Fetch (browser)** — On every page load, the browser queries WikiCFP RSS feeds across 8 technical areas and merges live CFP/conference entries into the event board. Cached for 24 hours.
+3. **Live News Feed** — On every page load, fetches fresh articles from Google News RSS using 10 targeted queries. Cached for 6 hours.
+4. **Intel Theme** — Styled with Intel brand colors for a professional look.
 
 ---
 
-## How It Caches and Refreshes
+## How Live Data Is Fetched
 
-To avoid fetching on every page load (which is slow and rate-limited), results are cached in the browser's localStorage:
+Because browsers block direct cross-origin requests, a **CORS proxy fallback chain** is used:
 
-| Cache | TTL |
+1. Tries a direct fetch (works if the remote allows CORS)
+2. Falls back to `api.allorigins.win`
+3. Falls back to `corsproxy.io`
+
+This applies to both the Google News RSS feed and the WikiCFP RSS event feed.
+
+---
+
+## Cache & Refresh Schedule
+
+| Data | Cache TTL |
 |---|---|
-| Core news cache | 6 hours |
-| Explore news cache | 6 hours |
+| Live WikiCFP events | 24 hours |
+| Core news feed | 6 hours |
+| Explore news feed | 6 hours |
 
-**Monday Auto-Refresh:** Every Monday, regardless of cache age, the dashboard automatically clears the cache and fetches fresh news. This ensures the team always starts the week with updated information.
+**Monday Auto-Refresh:** Every Monday all caches are cleared and everything re-fetches fresh automatically.
 
-**Manual Refresh:** A Refresh button in the header clears the cache immediately and re-fetches all news.
+**Manual Refresh:** The **Refresh** button in the header clears all caches and re-fetches live.
 
 ---
 
-## How Events Are Displayed
+## Event Urgency System
 
-Events go through a **urgency scoring system** based on how many days remain until the event date:
-
-| Days Remaining | Label | Color |
+| Days Remaining | Label | Colour |
 |---|---|---|
-| 7 days or fewer | URGENT | Red |
+| <= 7 days | URGENT | Red |
 | 8 - 14 days | NEARING | Orange |
-| 15 - 30 days | UPCOMING | Yellow |
-| Beyond 30 days | Scheduled | Green |
+| > 14 days | Scheduled | Green |
+| Past | Past | Grey |
 
-An **Alert Bar** at the top shows pills for all urgent and nearing events at a glance. A **Paper Submissions table** separately tracks CFP deadlines with the same color coding.
+A **Paper Submissions table** separately tracks CFP deadlines with the same colour coding.
 
 ---
 
 ## Edit Mode
 
-The dashboard has a PIN-protected Edit Mode (intel2026) that allows authorized users to:
-- Add new custom events (stored in localStorage)
-- Delete existing events
-
-All changes persist in the browser and do not affect what other users see.
+PIN-protected Edit Mode (`intel2026`) lets you add or delete events. Changes are stored in the browser's `localStorage` and do not affect other users.
 
 ---
 
-## Auto-Update — How Events Stay Fresh Without Any Manual Work
+## Auto-Update via GitHub Actions
 
-A **GitHub Actions workflow** runs automatically every Monday at 6:00 AM IST. It:
+A GitHub Actions workflow runs every Monday at 6:00 AM IST:
 
-1. Queries **WikiCFP** (a global call-for-papers database) across 15 technical areas using targeted RSS feeds
-2. Parses each result to extract event name, date, location, and submission deadline
-3. Filters out past events — only future events are kept
-4. Injects the fetched events directly into `index.html` between special markers
-5. Commits and pushes the updated file back to this repo
-6. GitHub Pages automatically deploys the new version within ~1 minute
+1. Queries WikiCFP across 15 technical areas via RSS
+2. Parses event name, date, location, and submission deadline
+3. Filters out past events — only future events kept
+4. Injects results into `index.html` between special markers
+5. Commits and pushes — GitHub Pages deploys in ~1 minute
 
-This means the dashboard updates itself every week — no one needs to touch the code or file manually.
-
-The workflow can also be triggered manually at any time from the [Actions tab](../../actions).
+Trigger manually any time from the [Actions tab](../../actions).
 
 ---
 
-## How It Fetches Live Data
-
-Because browsers block direct cross-origin requests, the dashboard uses a **CORS proxy fallback chain** to fetch news on page load:
-
-1. Tries a direct fetch to Google News RSS (`news.google.com/rss/search?q=...`)
-2. If blocked, falls back to `api.allorigins.win` as a CORS proxy
-3. If that fails, falls back to `corsproxy.io`
-
-WikiCFP RSS is similarly fetched for paper submission deadlines (CFP = Call For Papers).
-
-Each fetch returns XML which is parsed in-browser using `DOMParser`, extracting title, link, source, and date from each RSS item.
-
----
-
-## File Structure in This Repo
+## File Structure
 
 ```
 tech-dashboard/
-├── index.html                          # The complete dashboard (single self-contained file)
-├── scripts/
-│   └── fetch_events.py                 # Python script: fetches WikiCFP events, updates index.html
-├── .github/
-│   └── workflows/
-│       └── update-events.yml           # GitHub Actions: runs fetch_events.py every Monday 6 AM IST
-└── README.md                           # This file
+|- index.html                  # Complete dashboard - single self-contained file
+|- scripts/
+|  `- fetch_events.py          # Fetches WikiCFP events weekly (GitHub Actions)
+|- .github/
+|  `- workflows/
+|     `- update-events.yml     # GitHub Actions: runs every Monday 6 AM IST
+`- README.md                   # This file
 ```

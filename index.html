@@ -644,26 +644,26 @@
 <div class="modal-overlay" id="shareOverlay" onclick="closeShare(event)">
   <div class="modal" style="max-width:500px">
     <button class="modal-close" onclick="closeShare()">&times;</button>
-    <h2 style="color:var(--intel-blue)">&#128279; Share & Access Guide</h2>
-    <p style="margin:12px 0;font-size:0.85rem;color:#555">This dashboard is stored on <strong>OneDrive</strong>. Use OneDrive sharing to control who can view or edit.</p>
-    <div style="background:#f0f7ff;border-radius:10px;padding:14px;margin:12px 0;font-size:0.83rem">
-      <strong style="color:#1565c0">&#128272; You &amp; Manager (Edit Access)</strong>
-      <p style="margin-top:6px;color:#333">Right-click the file in OneDrive &rarr; <em>Share</em> &rarr; <em>People with specific access</em> &rarr; Set to <strong>Can edit</strong> for manager&rsquo;s Intel email.</p>
+    <h2 style="color:var(--intel-blue)">&#128279; Share &amp; Access</h2>
+    <div style="background:#e8f4fd;border-radius:10px;padding:14px;margin:14px 0;font-size:0.85rem">
+      <strong style="color:#0068b5">&#127760; Live Dashboard URL</strong>
+      <p style="margin-top:8px"><a href="https://bwithbiswa.github.io/tech-dashboard/" target="_blank" style="color:#0068b5;font-weight:700;word-break:break-all">https://bwithbiswa.github.io/tech-dashboard/</a></p>
+      <p style="margin-top:6px;color:#555;font-size:0.8rem">Hosted on GitHub Pages &mdash; works in any browser, no login required. Share this URL with anyone on the team.</p>
     </div>
     <div style="background:#f0f7ff;border-radius:10px;padding:14px;margin:12px 0;font-size:0.83rem">
-      <strong style="color:#2e7d32">&#128065; Others (View Only)</strong>
-      <p style="margin-top:6px;color:#333">Share with <strong>Can view</strong> permission &mdash; recipients open in browser, no edits possible to the file.</p>
+      <strong style="color:#1565c0">&#128225; Auto-Updates</strong>
+      <p style="margin-top:6px;color:#333">Events and news are fetched live on every page load. GitHub Actions refreshes the event list every Monday at 6:00 AM IST automatically &mdash; no manual work needed.</p>
     </div>
     <div style="background:#fff8e1;border-radius:10px;padding:14px;margin:12px 0;font-size:0.83rem">
       <strong style="color:#f57f00">&#128250; Presenting</strong>
-      <p style="margin-top:6px;color:#333">Click <strong>Present</strong> button (top right) for fullscreen mode. Or open in Edge &rarr; press <kbd>F11</kbd> for browser fullscreen.</p>
+      <p style="margin-top:6px;color:#333">Press <kbd>F11</kbd> in your browser for fullscreen, or use the browser&rsquo;s present/cast feature.</p>
     </div>
     <div style="background:#fde8e8;border-radius:10px;padding:14px;margin:12px 0;font-size:0.83rem">
-      <strong style="color:#c62828">&#128274; In-Browser Edit Mode (PIN Required)</strong>
-      <p style="margin-top:6px;color:#333">Click <strong>Edit Mode</strong> in the header. Enter PIN to add/delete events. Changes save in this browser only.<br>To update the shared file permanently, edit the HTML file&rsquo;s <code>EVENTS</code> array and save to OneDrive.</p>
+      <strong style="color:#c62828">&#128274; Edit Mode (PIN Protected)</strong>
+      <p style="margin-top:6px;color:#333">Click <strong>Edit Mode</strong> in the header and enter the PIN to add or remove events. Changes are saved in your browser only and do not affect other users.</p>
     </div>
     <div style="background:#e8f5e9;border-radius:10px;padding:12px;margin:12px 0;font-size:0.82rem;color:#2e7d32">
-      <strong>&#9989; No backend/server required.</strong> This is a self-contained HTML file. Works in any browser from OneDrive, email attachment, or USB drive.
+      <strong>&#9989; No backend, no login.</strong> Pure HTML + JavaScript &mdash; works offline for curated events, fetches live data when online.
     </div>
   </div>
 </div>
@@ -2018,7 +2018,7 @@ const EVENTS2 = [
     location: "Online + Austin, TX, USA", mode: "Hybrid",
     desc: "ROS 2 ecosystem, autonomous mobile robots, robot simulation, MoveIt, Nav2, safety-critical systems and AI planning.",
     link: "https://rosworld.ros.org"
-  }
+  },
 
   // ── ADDITIONAL GLOBAL TECHNICAL FORUMS ────────────────────────────────────
   {
