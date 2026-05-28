@@ -1288,7 +1288,7 @@ function getFiltered() {
 // ============================================================
 function render() {
   const filtered = getFiltered();
-  const future = filtered.filter(ev => daysUntil(ev.date) >= -7);
+  const future = filtered.filter(ev => daysUntil(ev.date) >= 0);
 
   // Stats
   document.getElementById('statsRow').innerHTML = `
@@ -1333,8 +1333,8 @@ function render() {
     ? global.map(buildCard).join('')
     : '<p style="color:rgba(255,255,255,0.5);padding:12px">No global events with current filters.</p>';
 
-  // Paper table
-  const paperRows = filtered.filter(e => e.cfpDeadline);
+  // Paper table — only open (future) CFP deadlines
+  const paperRows = filtered.filter(e => e.cfpDeadline && daysUntil(e.cfpDeadline) >= 0);
   document.getElementById('paperBody').innerHTML = paperRows.map(ev => {
     const d = ev.cfpDeadline ? daysUntil(ev.cfpDeadline) : null;
     const cls = d !== null ? (d < 0 ? '#999' : d <= 7 ? '#c62828' : d <= 14 ? '#f57f17' : '#1565c0') : '#999';
@@ -1435,22 +1435,32 @@ function closeModal(e) {
 // ============================================================
 function refreshDashboard() {
   const btn = document.querySelector('.refresh-btn');
-  btn.textContent = '⟳';
+  btn.innerHTML = '&#8635;';
   btn.disabled = true;
   // Clear all caches so everything re-fetches live
   try { localStorage.removeItem(NEWS_CACHE_KEY); } catch {}
+  try { localStorage.removeItem(EXPLORE_NEWS_CACHE_KEY); } catch {}
   try { localStorage.removeItem(LIVE_EVENTS_KEY); } catch {}
   LIVE_EVENTS = [];
+  allFetchedNews = [];
+  allExploreNews = [];
+  exploreInitialized = false;
   setTimeout(() => {
     render();
     const now = new Date();
     document.getElementById('lastUpdated').textContent =
       'Updated: ' + now.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) +
       ' ' + now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
-    btn.textContent = '&#8635; Refresh';
+    btn.innerHTML = '&#8635; Refresh';
     btn.disabled = false;
     fetchAllNews();
     fetchLiveEvents();
+    // If explore tab is currently visible, refresh it too
+    if (document.getElementById('exploreContent').style.display !== 'none') {
+      exploreInitialized = true;
+      renderExplore();
+      fetchExploreNews();
+    }
   }, 300);
 }
 
@@ -1799,9 +1809,15 @@ async function fetchAllNews() {
     setFeedStatus('ok', results.length, false, new Date());
   } else {
     setFeedStatus('error', 0, false, null);
-    document.getElementById('newsGrid').innerHTML =
-      '<div style="color:rgba(255,255,255,0.55);padding:16px;font-size:0.85rem;grid-column:1/-1">&#9888; Live feed unavailable &mdash; network or firewall may be blocking external requests.<br>The curated events board above is always available offline.</div>';
-    document.getElementById('newsCount').textContent = 'Unavailable';
+    // Keep existing data visible if available — only show error when truly empty
+    if (allFetchedNews.length > 0) {
+      renderNewsGrid(allFetchedNews);
+      document.getElementById('newsCount').textContent = allFetchedNews.length + ' stories (cached)';
+    } else {
+      document.getElementById('newsGrid').innerHTML =
+        '<div style="color:rgba(255,255,255,0.55);padding:16px;font-size:0.85rem;grid-column:1/-1">&#9888; Live feed unavailable &mdash; network or firewall may be blocking external requests.<br>The curated events board above is always available.</div>';
+      document.getElementById('newsCount').textContent = 'Unavailable';
+    }
   }
 }
 
@@ -2165,7 +2181,7 @@ function areaTagExplore(area) {
 
 // ── Explore tab render ────────────────────────────────────────────────────────
 function renderExplore() {
-  const future = EVENTS2.filter(ev => daysUntil(ev.date) >= -7);
+  const future = EVENTS2.filter(ev => daysUntil(ev.date) >= 0);
 
   // Stats
   document.getElementById('exploreStatsRow').innerHTML = `
@@ -2303,9 +2319,15 @@ async function fetchExploreNews() {
     setExploreFeedStatus('ok', results.length, false, new Date());
   } else {
     setExploreFeedStatus('error', 0, false, null);
-    document.getElementById('exploreNewsGrid').innerHTML =
-      '<div style="color:rgba(255,255,255,0.55);padding:16px;font-size:0.85rem;grid-column:1/-1">&#9888; Live feed unavailable. Check network/firewall.</div>';
-    document.getElementById('exploreNewsCount').textContent = 'Unavailable';
+    // Keep existing data visible if available
+    if (allExploreNews.length > 0) {
+      renderExploreNewsGrid(allExploreNews);
+      document.getElementById('exploreNewsCount').textContent = allExploreNews.length + ' stories (cached)';
+    } else {
+      document.getElementById('exploreNewsGrid').innerHTML =
+        '<div style="color:rgba(255,255,255,0.55);padding:16px;font-size:0.85rem;grid-column:1/-1">&#9888; Live feed unavailable. Check network/firewall.</div>';
+      document.getElementById('exploreNewsCount').textContent = 'Unavailable';
+    }
   }
 }
 
