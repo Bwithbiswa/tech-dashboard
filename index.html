@@ -444,8 +444,9 @@
   </div>
   <div class="header-right">
     <div class="live-badge"><span class="live-dot"></span>LIVE</div>
-    <div class="last-updated" id="lastUpdated">Last refreshed: 29 May 2026</div>
-    <button class="refresh-btn" onclick="refreshDashboard()">Refresh</button>
+    <div class="last-updated" id="lastUpdated"></div>
+    <span id="liveEventsBadge" style="font-size:0.72rem;font-weight:600;color:#4caf50;white-space:nowrap"></span>
+    <button class="refresh-btn" onclick="refreshDashboard()">&#8635; Refresh</button>
   </div>
 </div>
 
@@ -1410,16 +1411,23 @@ function closeModal(e) {
 // ============================================================
 function refreshDashboard() {
   const btn = document.querySelector('.refresh-btn');
-  btn.textContent = 'Refresh';
+  btn.textContent = '⟳';
   btn.disabled = true;
+  // Clear all caches so everything re-fetches live
+  try { localStorage.removeItem(NEWS_CACHE_KEY); } catch {}
+  try { localStorage.removeItem(LIVE_EVENTS_KEY); } catch {}
+  LIVE_EVENTS = [];
   setTimeout(() => {
     render();
     const now = new Date();
     document.getElementById('lastUpdated').textContent =
-      'Updated: ' + now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
-    btn.textContent = 'Refresh';
+      'Updated: ' + now.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) +
+      ' ' + now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+    btn.textContent = '&#8635; Refresh';
     btn.disabled = false;
-  }, 900);
+    fetchAllNews();
+    fetchLiveEvents();
+  }, 300);
 }
 
 // ============================================================
@@ -1465,7 +1473,7 @@ function getDeleted() {
 function getAllEvents() {
   const deleted = getDeleted();
   const base = EVENTS.filter(e => !deleted.includes(e.id));
-  return [...base, ...AUTO_EVENTS.filter(e => !deleted.includes(e.id)), ...getCustomEvents()];
+  return [...base, ...AUTO_EVENTS.filter(e => !deleted.includes(e.id)), ...LIVE_EVENTS.filter(e => !deleted.includes(e.id)), ...getCustomEvents()];
 }
 
 function deleteEvent(id) {
@@ -1552,10 +1560,13 @@ function checkMondayRefresh() {
   thisMonday.setHours(0,0,0,0);
   if (stored !== thisMonday.toDateString()) {
     localStorage.setItem('techDashLastMonday', thisMonday.toDateString());
-    try { localStorage.removeItem('techDashNewsCache'); } catch {}
-    showToast('\uD83D\uDD04 Monday auto-refresh - fetching fresh news & events!', 5000);
+    try { localStorage.removeItem(NEWS_CACHE_KEY); } catch {}
+    try { localStorage.removeItem(LIVE_EVENTS_KEY); } catch {}
+    LIVE_EVENTS = [];
+    showToast('\uD83D\uDD04 Monday auto-refresh \u2014 fetching fresh news & live events!', 5000);
     render();
     fetchAllNews();
+    fetchLiveEvents();
   }
 }
 
@@ -2107,6 +2118,11 @@ const EVENTS2 = [
 const AUTO_EVENTS = [];
 // === AUTO_EVENTS_END ===
 
+// ── Live WikiCFP event cache keys
+const LIVE_EVENTS_KEY = 'techDashLiveEvents';
+const LIVE_EVENTS_TTL = 24 * 60 * 60 * 1000; // 24 h
+let LIVE_EVENTS = [];
+
 // ── Explore area tag helpers ──────────────────────────────────────────────────
 function areaTagExplore(area) {
   const map = {
@@ -2307,6 +2323,115 @@ function setExploreFeedStatus(state, count, cached, date) {
 }
 
 // ============================================================
+// BROWSER-SIDE LIVE WIKICFP EVENT FETCH ENGINE
+// ============================================================
+const CFP_QUERIES = [
+  { q: 'virtualization hypervisor',      areas: ['virtualization'] },
+  { q: 'GPU graphics rendering',         areas: ['graphics'] },
+  { q: 'artificial intelligence AI',     areas: ['ai'] },
+  { q: 'machine learning deep learning', areas: ['ai'] },
+  { q: 'large language model generative',areas: ['ai','genai'] },
+  { q: 'display OLED screen technology', areas: ['display'] },
+  { q: 'test automation validation',     areas: ['automation'] },
+  { q: 'robotics autonomous systems',    areas: ['robotics'] },
+];
+
+function parseCFPDate(s) {
+  if (!s) return null;
+  s = s.trim().replace(/\.$/, '');
+  if (/^(N\/A|TBD|n\/a)$/i.test(s)) return null;
+  const d = new Date(s);
+  if (!isNaN(d.getTime()) && d.getFullYear() > 2020) return d.toISOString().split('T')[0];
+  return null;
+}
+
+function parseCFPDesc(desc) {
+  const txt = desc
+    .replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&')
+    .replace(/<[^>]+>/g,' ');
+  let eventDate = null, location = null, deadline = null;
+  const whenM = txt.match(/When\s*:\s*(.+?)(?:\n|$)/i);
+  if (whenM) eventDate = parseCFPDate(whenM[1].split(/\s*-\s*/)[0].trim());
+  const whereM = txt.match(/Where\s*:\s*(.+?)(?:\n|$)/i);
+  if (whereM) location = whereM[1].trim();
+  const deadM = txt.match(/(?:Submission Deadline|Deadline)\s*:\s*(.+?)(?:\n|$)/i);
+  if (deadM) deadline = parseCFPDate(deadM[1].trim());
+  return { eventDate, location, deadline };
+}
+
+function cfpGeo(loc) {
+  if (!loc) return 'global';
+  const low = loc.toLowerCase();
+  if (['bengaluru','bangalore'].some(k => low.includes(k))) return 'bangalore';
+  if (['india','mumbai','delhi','hyderabad','chennai','pune','kolkata','noida','gurgaon','gurugram'].some(k => low.includes(k))) return 'india';
+  return 'global';
+}
+
+function setLiveBadge(msg, color) {
+  const el = document.getElementById('liveEventsBadge');
+  if (el) { el.textContent = msg; el.style.color = color || '#90caf9'; }
+}
+
+async function fetchLiveEvents() {
+  setLiveBadge('\u29D7 Fetching live events\u2026', '#90caf9');
+
+  // Check cache first
+  try {
+    const cached = JSON.parse(localStorage.getItem(LIVE_EVENTS_KEY) || 'null');
+    if (cached && (Date.now() - cached.ts) < LIVE_EVENTS_TTL) {
+      LIVE_EVENTS = cached.events || [];
+      setLiveBadge(`+${LIVE_EVENTS.length} live events (cached)`, '#4caf50');
+      render();
+      return;
+    }
+  } catch {}
+
+  const results = [];
+  const seen = new Set();
+  let eid = 9000;
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  for (const { q, areas } of CFP_QUERIES) {
+    try {
+      const xml = await proxyFetch('http://www.wikicfp.com/cfp/rss?q=' + encodeURIComponent(q));
+      const items = parseXmlItems(xml);
+      for (const item of items.slice(0, 6)) {
+        const title = cleanTitle(getXmlField(item, 'title'));
+        const link  = getXmlField(item, 'link');
+        const desc  = getXmlField(item, 'description');
+        if (!title || !link || seen.has(title)) continue;
+        const { eventDate, location, deadline } = parseCFPDesc(desc);
+        if ((!eventDate || eventDate < todayStr) && (!deadline || deadline < todayStr)) continue;
+        seen.add(title);
+        results.push({
+          id: eid++, title,
+          org: 'WikiCFP (live)',
+          type: (deadline && !eventDate) ? 'paper' : 'conference',
+          areas, geo: cfpGeo(location),
+          date: eventDate || deadline || todayStr,
+          endDate: eventDate || deadline || todayStr,
+          cfpDeadline: deadline || null,
+          location: location || 'Online / TBD',
+          desc: deadline ? 'Submission deadline: ' + deadline : 'See event page for details.',
+          link, mode: 'TBD',
+          _live: true
+        });
+      }
+    } catch { /* proxy unavailable, skip */ }
+    await new Promise(r => setTimeout(r, 400)); // polite delay
+  }
+
+  LIVE_EVENTS = results;
+  try { localStorage.setItem(LIVE_EVENTS_KEY, JSON.stringify({ ts: Date.now(), events: results })); } catch {}
+  if (results.length > 0) {
+    setLiveBadge(`+${results.length} live events fetched`, '#4caf50');
+  } else {
+    setLiveBadge('Live events: proxy blocked', '#aaa');
+  }
+  render();
+}
+
+// ============================================================
 // AUTO REFRESH every Monday check + initial render
 // ============================================================
 window.onload = () => {
@@ -2316,8 +2441,8 @@ window.onload = () => {
     'Updated: ' + now.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) + ' ' +
     now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
   fetchAllNews();
+  fetchLiveEvents();
   checkMondayRefresh();
-  // Check every hour if Monday has arrived (triggers news re-fetch on Mondays)
   setInterval(() => { checkMondayRefresh(); }, 60 * 60 * 1000);
 };
 </script>
