@@ -1187,6 +1187,68 @@ const EVENTS = [
     link: "https://khronos.org",
     cfpDeadline: null,
     mode: "Online"
+  },
+
+  // ---- GLOBAL (ADDITIONAL MAJOR FORUMS) ----
+  {
+    id: 31,
+    title: "Computex 2026",
+    org: "TAITRA / Taipei Computer Association",
+    type: "conference",
+    areas: ["ai","graphics","display"],
+    geo: "global",
+    date: "2026-06-02",
+    endDate: "2026-06-05",
+    location: "Taipei Nangang Exhibition Center, Taiwan",
+    desc: "World's largest AI & computing exhibition — theme 'AI Together'. AI PCs, next-gen GPUs, Arm chips, server platforms, robotics, and edge computing. Intel CEO keynote featured.",
+    link: "https://www.computextaipei.com.tw/en/",
+    cfpDeadline: null,
+    mode: "In-Person"
+  },
+  {
+    id: 32,
+    title: "ISC High Performance 2026",
+    org: "ISC Group",
+    type: "conference",
+    areas: ["ai","automation"],
+    geo: "global",
+    date: "2026-06-14",
+    endDate: "2026-06-18",
+    location: "Hamburg Messe und Congress, Germany",
+    desc: "Europe's premier HPC conference covering AI/ML at scale, GPU clusters, quantum-HPC hybrid systems, exascale workloads, and scientific computing infrastructure.",
+    link: "https://www.isc-hpc.com",
+    cfpDeadline: null,
+    mode: "In-Person"
+  },
+  {
+    id: 33,
+    title: "Intel Innovation 2026",
+    org: "Intel Corporation",
+    type: "conference",
+    areas: ["ai","graphics","display","virtualization"],
+    geo: "global",
+    date: "2026-09-16",
+    endDate: "2026-09-17",
+    location: "San Jose Convention Center, California, USA",
+    desc: "Intel's annual developer and partner conference covering Intel AI accelerators, Arc GPU, Gaudi, Core Ultra, Xeon, and platform software innovations.",
+    link: "https://www.intel.com/content/www/us/en/events/on-event-series/innovation.html",
+    cfpDeadline: null,
+    mode: "Hybrid"
+  },
+  {
+    id: 34,
+    title: "MICRO 59 — IEEE/ACM Microarchitecture Conference 2026",
+    org: "IEEE / ACM",
+    type: "conference",
+    areas: ["ai","graphics","virtualization"],
+    geo: "global",
+    date: "2026-11-01",
+    endDate: "2026-11-05",
+    location: "Atlanta, Georgia, USA",
+    desc: "Top computer architecture conference covering CPU/GPU microarchitecture, AI accelerator design, memory systems, and hardware security.",
+    link: "https://microarch.org",
+    cfpDeadline: "2026-06-15",
+    mode: "In-Person"
   }
 ];
 
@@ -2070,12 +2132,12 @@ const EVENTS2 = [
 
   // ── ADDITIONAL GLOBAL TECHNICAL FORUMS ────────────────────────────────────
   {
-    id: 121, title: "Computex 2027",
-    org: "TAITRA / Taiwan External Trade Development Council", type: "conference",
+    id: 121, title: "Computex 2026",
+    org: "TAITRA / Taipei Computer Association", type: "conference",
     areas: ["semi","ai","iot"], geo: "global",
-    date: "2027-05-25", endDate: "2027-05-29", cfpDeadline: null,
+    date: "2026-06-02", endDate: "2026-06-05", cfpDeadline: null,
     location: "Taipei Nangang Exhibition Center, Taiwan", mode: "In-Person",
-    desc: "World's largest computer hardware and electronics show covering AI PCs, next-gen GPUs, ARM chips, server platforms, and edge computing innovations.",
+    desc: "World's largest AI & computing exhibition — theme 'AI Together'. AI PCs, next-gen GPUs, Arm chips, server platforms, robotics, and edge computing. Intel and NVIDIA CEO keynotes.",
     link: "https://www.computextaipei.com.tw"
   },
   {
@@ -2158,6 +2220,51 @@ const EVENTS2 = [
     location: "San Jose Convention Center, California, USA", mode: "In-Person",
     desc: "Open hardware ecosystem summit covering AI server racks, data center cooling, open silicon, CXL interconnects, and disaggregated computing.",
     link: "https://www.opencompute.org"
+  },
+  {
+    id: 131, title: "ISC High Performance 2026",
+    org: "ISC Group", type: "conference",
+    areas: ["cloud","data","quantum"], geo: "global",
+    date: "2026-06-14", endDate: "2026-06-18", cfpDeadline: null,
+    location: "Hamburg Messe und Congress, Germany", mode: "In-Person",
+    desc: "Europe's premier HPC conference covering AI/ML at scale, GPU clusters, quantum-HPC hybrid systems, exascale workloads, and scientific computing.",
+    link: "https://www.isc-hpc.com"
+  },
+  {
+    id: 132, title: "IEDM 2026 — IEEE Intl Electron Devices Meeting",
+    org: "IEEE Electron Devices Society", type: "conference",
+    areas: ["semi"], geo: "global",
+    date: "2026-12-05", endDate: "2026-12-09", cfpDeadline: "2026-07-15",
+    location: "San Francisco, California, USA", mode: "In-Person",
+    desc: "World's foremost forum for semiconductor and transistor breakthroughs — memory, logic, 2D materials, advanced node process, and energy-efficient device research.",
+    link: "https://www.ieee-iedm.org"
+  },
+  {
+    id: 133, title: "Semicon Taiwan 2026",
+    org: "SEMI", type: "conference",
+    areas: ["semi","ai"], geo: "global",
+    date: "2026-09-17", endDate: "2026-09-19", cfpDeadline: null,
+    location: "Taipei Nangang Exhibition Center, Taiwan", mode: "In-Person",
+    desc: "Asia's leading semiconductor trade show covering chip equipment, packaging, advanced process, 3D-IC, chiplet integration, and AI semiconductor supply chain.",
+    link: "https://www.semicontaiwan.org"
+  },
+  {
+    id: 134, title: "Computex 2027",
+    org: "TAITRA / Taipei Computer Association", type: "conference",
+    areas: ["semi","ai","iot"], geo: "global",
+    date: "2027-05-25", endDate: "2027-05-29", cfpDeadline: null,
+    location: "Taipei Nangang Exhibition Center, Taiwan", mode: "In-Person",
+    desc: "World's largest computer hardware and electronics show covering AI PCs, next-gen GPUs, ARM chips, server platforms, and edge computing innovations.",
+    link: "https://www.computextaipei.com.tw"
+  },
+  {
+    id: 135, title: "Microsoft Ignite 2026",
+    org: "Microsoft", type: "conference",
+    areas: ["cloud","ai","devops"], geo: "global",
+    date: "2026-11-17", endDate: "2026-11-21", cfpDeadline: null,
+    location: "Chicago, Illinois, USA", mode: "Hybrid",
+    desc: "Microsoft's flagship annual conference covering Azure AI, Copilot, Teams, Dynamics, Power Platform and enterprise cloud transformation at scale.",
+    link: "https://ignite.microsoft.com"
   },
 ];
 
